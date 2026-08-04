@@ -49,16 +49,88 @@ $category_params['only_with_offers'] = "(SELECT count(id) FROM pricecomp_store_p
 //only with an updated price
 $category_params['updated_price'] = "(p.lowest_price_eur/p.metal_weight_oz) > 0";
 
-if(!empty($_GET['country'])) {
-	$category_params['country'] = array('sql' => "p.country_origin = ?", 'params' => array($_GET['country']));
-	unset($category_params['updated_price']);
-	unset($category_params['only_with_offers']);
+/**
+ * Filters are multi-select, so every value arrives as an array. Anything that
+ * is not a plain scalar is dropped rather than passed on to the query.
+ */
+if(!function_exists('tradeboost_filter_values')) {
+	function tradeboost_filter_values($key) {
+		if(!isset($_GET[$key])) { return array(); }
+		$values = array();
+		foreach((array) $_GET[$key] as $value) {
+			if(is_scalar($value) && (string) $value !== '') { $values[] = (string) $value; }
+		}
+		return array_values(array_unique($values));
+	}
 }
-if(!empty($_GET['manufacturer'])) {
-	$category_params['manufacturer'] = array('sql' => "p.manufacturer = ?", 'params' => array($_GET['manufacturer']));
-	unset($category_params['updated_price']);
-	unset($category_params['only_with_offers']);
+
+if(!function_exists('tradeboost_filter_label')) {
+	function tradeboost_filter_label($translation, $language, $key, $fallback) {
+		if(isset($translation[$language]['filter'][$key])) { return $translation[$language]['filter'][$key]; }
+		if(isset($translation['EN']['filter'][$key])) { return $translation['EN']['filter'][$key]; }
+		return $fallback;
+	}
 }
+
+$selected_facets = array(
+	'country'      => tradeboost_filter_values('country'),
+	'manufacturer' => tradeboost_filter_values('manufacturer'),
+	'weight'       => tradeboost_filter_values('weight'),
+	'premium'      => tradeboost_filter_values('premium'),
+);
+
+// lowest_price_eur is in EUR, so both the spot price and the price range have
+// to be converted out of the page currency before they reach the query.
+$spot_prices_eur = array(
+	'AU' => $comodity_price_array['AU']['EUR']['price_per_oz'],
+	'SI' => $comodity_price_array['SI']['EUR']['price_per_oz'],
+);
+
+$price_min = (isset($_GET['price_min']) && is_scalar($_GET['price_min']) && $_GET['price_min'] !== '') ? (float) $_GET['price_min'] : false;
+$price_max = (isset($_GET['price_max']) && is_scalar($_GET['price_max']) && $_GET['price_max'] !== '') ? (float) $_GET['price_max'] : false;
+
+if(!function_exists('tradeboost_price_to_eur')) {
+	function tradeboost_price_to_eur($catalog, $currency, $value, $currency_rates) {
+		if($value === false) { return false; }
+		$converted = $catalog->convert_currency($currency, 'EUR', $value, $currency_rates);
+		// An unsupported currency pair would otherwise drop the filter entirely.
+		return ($converted === false) ? $value : $converted;
+	}
+}
+
+$price_min_eur = tradeboost_price_to_eur($catalog, $page_currency, $price_min, $currency_rates);
+$price_max_eur = tradeboost_price_to_eur($catalog, $page_currency, $price_max, $currency_rates);
+
+/**
+ * The facet counts are built from the base constraints only - the same ones the
+ * product query uses - so the numbers shown always add up to what the list
+ * actually contains. The price range sits in the base because it is a range
+ * input with no counts of its own.
+ */
+$base_params = $category_params;
+
+$price_filter = $catalog->filter_price($price_min_eur, $price_max_eur);
+if($price_filter) { $base_params['price'] = $price_filter; }
+
+// Manufacturer is no longer offered as a filter, but existing ?manufacturer=
+// links still have to narrow the list. Keeping it in the base rather than in
+// the facets means the counts shown stay consistent with such a link.
+$manufacturer_filter = $catalog->filter_in('p.manufacturer', $selected_facets['manufacturer']);
+if($manufacturer_filter) { $base_params['manufacturer'] = $manufacturer_filter; }
+
+$facet_rows = $catalog->get_facet_rows($base_params);
+$facet_counts = $catalog->count_facets($facet_rows, $selected_facets, $spot_prices_eur);
+
+$category_params = $base_params;
+
+$country_filter = $catalog->filter_in('p.country_origin', $selected_facets['country']);
+if($country_filter) { $category_params['country'] = $country_filter; }
+
+$weight_filter = $catalog->filter_weight($selected_facets['weight']);
+if($weight_filter) { $category_params['weight'] = $weight_filter; }
+
+$premium_filter = $catalog->filter_premium($selected_facets['premium'], $spot_prices_eur);
+if($premium_filter) { $category_params['premium'] = $premium_filter; }
 
 if(!isset($sort_params)) { $sort_params = array(); }
 
@@ -146,54 +218,103 @@ if(!empty($_GET['sort'])) {
 	$sort = $_GET['sort'];	
 }
 
-$filter_array = $catalog->get_filter($products_array);
-
-$options_country = "";
-$options_type = "";
-$options_quantity = "";
-$options_manufacturer = "";
-$options_weight = "";
 $stock_only = "";
-
 $options_sorting = "";
 
+/**
+ * Each filter group is handed to the view as data rather than as a blob of
+ * HTML. An option is kept when it still matches something, or when it is
+ * already ticked - otherwise unticking your own selection would be impossible.
+ */
+$filter_groups = array();
 
-if(count($countries_array) > 1) {
-	foreach($countries_array as $key => $value) {
-		$selected = "";
-		if(isset($_GET['country'])) {
-			if($value == $_GET['country']) { $selected = "selected"; }
-		}
-
-		$options_country .= "<option value='".$value."' ".$selected.">". $key ."</option>";
+$country_options = array();
+if(!empty($countries_array)) {
+	foreach($countries_array as $country_name => $country_code) {
+		$count = isset($facet_counts['country'][$country_code]) ? $facet_counts['country'][$country_code] : 0;
+		$checked = in_array($country_code, $selected_facets['country']);
+		if($count == 0 && !$checked) { continue; }
+		$country_options[] = array('value' => $country_code, 'label' => $country_name, 'count' => $count, 'checked' => $checked);
 	}
-	$options_country = $translation[$page_language]['filter']['land']." <select name='country' id='country' class='form-control'><option value=''>".$translation[$page_language]['filter']['view_all']."</option>" . $options_country . "</select>";	
+}
+if(count($country_options) > 1) {
+	$filter_groups[] = array(
+		'name'    => 'country',
+		'label'   => tradeboost_filter_label($translation, $page_language, 'land', 'Country'),
+		'options' => $country_options,
+	);
 }
 
-if(count($filter_array['metal_weight_class']) > 1) {
-	foreach($filter_array['metal_weight_class'] as $key => $value) { 
-		$selected = "";
-		if(isset($_GET['metal_weight_class'])) {
-			if($key == $_GET['metal_weight_class']) { $selected = "selected"; }
-		}	
-		$options_weight .= "<option value='".$key."' ".$selected.">". $translation[$page_language]['filter'][$key] ."</option>";
-	}	
-	//$options_weight = $translation[$page_language]['filter']['metal_weight']." <select name='metal_weight_class' id='metal_weight_class' class='form-control'><option value=''>".$translation[$page_language]['filter']['view_all']."</option>" . $options_weight . "</select>";
-	$options_weight =  "";
-
-
+$weight_options = array();
+foreach($catalog->weight_denominations() as $denomination_key => $denomination) {
+	$count = isset($facet_counts['weight'][$denomination_key]) ? $facet_counts['weight'][$denomination_key] : 0;
+	$checked = in_array($denomination_key, $selected_facets['weight']);
+	if($count == 0 && !$checked) { continue; }
+	$weight_options[] = array(
+		'value'   => $denomination_key,
+		'label'   => $catalog->denomination_label($denomination),
+		'count'   => $count,
+		'checked' => $checked,
+	);
+}
+if(isset($facet_counts['weight']['other']) || in_array('other', $selected_facets['weight'])) {
+	$weight_options[] = array(
+		'value'   => 'other',
+		'label'   => tradeboost_filter_label($translation, $page_language, 'weight_other', 'Other weights'),
+		'count'   => isset($facet_counts['weight']['other']) ? $facet_counts['weight']['other'] : 0,
+		'checked' => in_array('other', $selected_facets['weight']),
+	);
+}
+if(count($weight_options) > 1) {
+	$filter_groups[] = array(
+		'name'    => 'weight',
+		'label'   => tradeboost_filter_label($translation, $page_language, 'metal_weight', 'Precious metal weight'),
+		'options' => $weight_options,
+	);
 }
 
-
-if(count($manufacturers_array) > 0) {
-	foreach($manufacturers_array as $key => $value) { 
-		$selected = "";
-		if(isset($_GET['manufacturer'])) {
-			if($key == $_GET['manufacturer']) { $selected = "selected"; }
-		}			$options_manufacturer .= "<option value='".$key."' ".$selected.">". $manufacturers_array[$key]['name'] ." (". $manufacturers_array[$key]['country'].")</option>";
-	}	
-	$options_manufacturer = $translation[$page_language]['filter']['manufacturer']." <select name='manufacturer' id='manufacturer' class='form-control'><option value=''>".$translation[$page_language]['filter']['view_all']."</option>" . $options_manufacturer . "</select>";
+$premium_labels = array(
+	'under_3' => 'premium_under_3',
+	'3_to_5'  => 'premium_3_to_5',
+	'5_to_10' => 'premium_5_to_10',
+	'over_10' => 'premium_over_10',
+);
+$premium_fallbacks = array(
+	'under_3' => 'Under 3% over spot',
+	'3_to_5'  => '3 - 5% over spot',
+	'5_to_10' => '5 - 10% over spot',
+	'over_10' => 'Over 10% over spot',
+);
+$premium_options = array();
+foreach($catalog->premium_brackets() as $bracket_key => $bracket) {
+	$count = isset($facet_counts['premium'][$bracket_key]) ? $facet_counts['premium'][$bracket_key] : 0;
+	$checked = in_array($bracket_key, $selected_facets['premium']);
+	if($count == 0 && !$checked) { continue; }
+	$premium_options[] = array(
+		'value'   => $bracket_key,
+		'label'   => tradeboost_filter_label($translation, $page_language, $premium_labels[$bracket_key], $premium_fallbacks[$bracket_key]),
+		'count'   => $count,
+		'checked' => $checked,
+	);
 }
+if(count($premium_options) > 1) {
+	$filter_groups[] = array(
+		'name'    => 'premium',
+		'label'   => tradeboost_filter_label($translation, $page_language, 'premium', 'Premium over spot'),
+		'options' => $premium_options,
+	);
+}
+
+$price_filter_labels = array(
+	'heading' => tradeboost_filter_label($translation, $page_language, 'price_range', 'Price'),
+	'from'    => tradeboost_filter_label($translation, $page_language, 'price_from', 'From'),
+	'to'      => tradeboost_filter_label($translation, $page_language, 'price_to', 'To'),
+);
+
+// product_group is only sparsely filled in, so it reads better as a list of
+// links to the group pages than as a filter.
+$popular_product_groups = $catalog->get_popular_product_groups($base_params, 12);
+$popular_groups_label = tradeboost_filter_label($translation, $page_language, 'popular_groups', 'Popular product groups');
 
 $selected = "";
 
@@ -230,14 +351,26 @@ if(!empty($translation_product_list[$page_language][$metal][$product_type]) && $
 	$page_description = $translation_product_list[$page_language][$metal][$product_type];
 }
 
-if(!empty($_GET['country']) && empty($_GET['manufacturer'])) {
-	$page_title .= " " . $translation[COUNTRY_DEFAULT]['country'][$_GET['country']];
+/**
+ * The single-selection titles are what the country and manufacturer landing
+ * pages rank on, so they are kept. Once several values are ticked there is no
+ * one name to put in the title and the generic one stands.
+ */
+$single_country = (count($selected_facets['country']) == 1) ? reset($selected_facets['country']) : false;
+$single_manufacturer = (count($selected_facets['manufacturer']) == 1) ? reset($selected_facets['manufacturer']) : false;
+
+if($single_country !== false && $single_manufacturer === false) {
+	if(isset($translation[COUNTRY_DEFAULT]['country'][$single_country])) {
+		$page_title .= " " . $translation[COUNTRY_DEFAULT]['country'][$single_country];
+	}
 	$page_description = $first_item_description;
 }
 
-if(empty($_GET['country']) && !empty($_GET['manufacturer'])) {
-	$page_title .= " " . $manufacturers_array[$_GET['manufacturer']]['name'] ;
-	$page_description = $manufacturers_array[$_GET['manufacturer']]['description_'.$page_language];
+if($single_country === false && $single_manufacturer !== false) {
+	if(isset($manufacturers_array[$single_manufacturer])) {
+		$page_title .= " " . $manufacturers_array[$single_manufacturer]['name'];
+		$page_description = $manufacturers_array[$single_manufacturer]['description_'.$page_language];
+	}
 }
 
 

@@ -199,7 +199,11 @@ class Catalog {
 		$filter_offers = "";
 		if($show_all_offers == false) {
 			//only offers that have been scraped last X hours
-			if(HTTP == 'http://tradeboost:8888/') {
+			// A local checkout runs against a stale dump of the offer table, so the
+			// freshness window is widened there. Keyed off the scheme rather than a
+			// hostname, which is what made this stop working when the local host
+			// changed from tradeboost:8888 to tb.local:8888.
+			if(strpos(HTTP, 'https://') !== 0) {
 				$filter_offers = " AND sp.update_date >= ?";
 				$parameters[] = date("Y-m-d", strtotime("-1080 day"));
 			} else {
@@ -366,9 +370,11 @@ class Catalog {
 		}
 
 		//only products that have been scraped last X hours
+		// Same local-checkout widening as get_products(), and keyed off the scheme
+		// for the same reason - a local dump of the offer table is months old.
 		$filter .= " AND sp.update_date >= ?";
-		if(HTTP == 'http://tradeboost:8888/') {
-			$parameters[] = date("Y-m-d", strtotime("-20 day"));
+		if(strpos(HTTP, 'https://') !== 0) {
+			$parameters[] = date("Y-m-d", strtotime("-1080 day"));
 		} else {
 			$parameters[] = date("Y-m-d", strtotime("-2 day"));
 		}
@@ -562,8 +568,403 @@ class Catalog {
 		}
 	}
 
+	/**
+	 * Coins and bars are both stored in metal_weight_oz, but the trade quotes
+	 * some sizes in grams (a 100 g bar) and others in troy ounces (a 1 oz
+	 * Krugerrand). Which series a product belongs to is a property of the
+	 * product, not of its type, so both are listed here and matched against the
+	 * stored value rather than branched on p.type.
+	 */
+	const OZ_IN_GRAM = 31.1034768;
+
+	/** Stored weights are rounded to six decimals, so matching needs slack. */
+	const WEIGHT_TOLERANCE = 0.002;
+
+	private $denominations = false;
+
+	public function weight_denominations() {
+
+		if ($this->denominations !== false) {
+			return $this->denominations;
+		}
+
+		$grams = array(1, 2, 2.5, 3, 5, 10, 20, 50, 100, 250, 500, 1000, 2000, 5000, 10000);
+		$ounces = array(0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 20, 25, 50, 100);
+
+		$denominations = array();
+
+		foreach ($grams as $value) {
+			$denominations['g_' . str_replace('.', '_', (string) $value)] = array(
+				'oz'    => $value / self::OZ_IN_GRAM,
+				'unit'  => 'gram',
+				'value' => $value,
+			);
+		}
+
+		foreach ($ounces as $value) {
+			$denominations['oz_' . str_replace('.', '_', (string) $value)] = array(
+				'oz'    => (float) $value,
+				'unit'  => 'oz',
+				'value' => $value,
+			);
+		}
+
+		uasort($denominations, array($this, 'compare_denominations'));
+
+		$this->denominations = $denominations;
+
+		return $this->denominations;
+	}
+
+	/**
+	 * Denominations are exact round numbers, so they are labelled without
+	 * format_weight()'s two decimals - "1 g", not "1.00 g".
+	 */
+	public function denomination_label($denomination) {
+
+		if ($denomination['unit'] == 'gram') {
+
+			if ($denomination['value'] >= 1000) {
+				return (string) (float) ($denomination['value'] / 1000) . ' kg';
+			}
+
+			return (string) (float) $denomination['value'] . ' g';
+		}
+
+		// Fractional ounces are traded as fractions, not decimals - a dealer
+		// lists a 1/10 oz Britannia, never a 0.1 oz one.
+		$fractions = array(
+			'0.1'  => '1/10',
+			'0.25' => '1/4',
+			'0.5'  => '1/2',
+		);
+
+		$value = (string) (float) $denomination['value'];
+
+		if (isset($fractions[$value])) {
+			return $fractions[$value] . ' oz';
+		}
+
+		return $value . ' oz';
+	}
+
+	private function compare_denominations($a, $b) {
+		if ($a['oz'] == $b['oz']) {
+			return 0;
+		}
+		return ($a['oz'] < $b['oz']) ? -1 : 1;
+	}
+
+	/**
+	 * Anything that is not a recognised denomination falls into 'other' rather
+	 * than becoming its own checkbox - the catalog holds 228 distinct weights,
+	 * some of them import errors (a coin stored as 32151 oz is a tonne of gold).
+	 */
+	public function denomination_key($metal_weight_oz) {
+
+		$weight = (float) $metal_weight_oz;
+
+		if ($weight <= 0) {
+			return false;
+		}
+
+		foreach ($this->weight_denominations() as $key => $denomination) {
+			if (abs($weight - $denomination['oz']) <= $denomination['oz'] * self::WEIGHT_TOLERANCE) {
+				return $key;
+			}
+		}
+
+		return 'other';
+	}
+
+	/**
+	 * The lowest bracket has a floor at spot. Without it, rows with a broken
+	 * price - a "1 oz" gold coin at 29 EUR - come out hundreds of percent below
+	 * spot and land in the bucket meant to show the best deals. Anything priced
+	 * below spot now falls outside every bracket: it still appears in the list,
+	 * it just cannot be reached through the premium filter.
+	 */
+	public function premium_brackets() {
+		return array(
+			'under_3' => array('min' => 0,  'max' => 3),
+			'3_to_5'  => array('min' => 3,  'max' => 5),
+			'5_to_10' => array('min' => 5,  'max' => 10),
+			'over_10' => array('min' => 10, 'max' => null),
+		);
+	}
+
+	public function premium_bracket_key($row, $spot_prices) {
+
+		$weight = (float) $row['metal_weight_oz'];
+		$price = (float) $row['lowest_price_eur'];
+		$spot = isset($spot_prices[$row['metal']]) ? (float) $spot_prices[$row['metal']] : 0;
+
+		if ($weight <= 0 || $price <= 0 || $spot <= 0) {
+			return false;
+		}
+
+		$premium = 100 * ((($price / $weight) - $spot) / $spot);
+
+		foreach ($this->premium_brackets() as $key => $bracket) {
+			if ($bracket['min'] !== null && $premium < $bracket['min']) {
+				continue;
+			}
+			if ($bracket['max'] !== null && $premium >= $bracket['max']) {
+				continue;
+			}
+			return $key;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Premium over spot is not a column - it is derived from the live metal
+	 * price, so the spot values are bound in as parameters. Spot must be given
+	 * in EUR because lowest_price_eur is.
+	 */
+	private function premium_expression(&$parameters, $spot_prices) {
+
+		$gold = isset($spot_prices['AU']) ? (float) $spot_prices['AU'] : 0;
+		$silver = isset($spot_prices['SI']) ? (float) $spot_prices['SI'] : 0;
+
+		$spot_case = "CASE p.metal WHEN 'AU' THEN ? WHEN 'SI' THEN ? ELSE NULL END";
+
+		// Order matters: the numerator's placeholders are read before the denominator's.
+		$parameters[] = $gold;
+		$parameters[] = $silver;
+		$parameters[] = $gold;
+		$parameters[] = $silver;
+
+		return "(100 * (((p.lowest_price_eur / NULLIF(p.metal_weight_oz, 0)) - " . $spot_case . ") / " . $spot_case . "))";
+	}
+
+	public function filter_in($column, $values) {
+
+		$clean = array();
+
+		foreach ((array) $values as $value) {
+			if ($value !== '' && $value !== null) {
+				$clean[] = $value;
+			}
+		}
+
+		if (empty($clean)) {
+			return false;
+		}
+
+		return array(
+			'sql'    => $column . " IN (" . implode(',', array_fill(0, count($clean), '?')) . ")",
+			'params' => $clean,
+		);
+	}
+
+	public function filter_weight($denomination_keys) {
+
+		$denominations = $this->weight_denominations();
+		$clauses = array();
+		$parameters = array();
+		$include_other = false;
+
+		foreach ((array) $denomination_keys as $key) {
+
+			if ($key === 'other') {
+				$include_other = true;
+				continue;
+			}
+
+			if (!isset($denominations[$key])) {
+				continue;
+			}
+
+			$clauses[] = "(p.metal_weight_oz BETWEEN ? AND ?)";
+			$parameters[] = $denominations[$key]['oz'] * (1 - self::WEIGHT_TOLERANCE);
+			$parameters[] = $denominations[$key]['oz'] * (1 + self::WEIGHT_TOLERANCE);
+		}
+
+		if ($include_other) {
+
+			$conditions = array();
+
+			foreach ($denominations as $denomination) {
+				$conditions[] = "(p.metal_weight_oz NOT BETWEEN ? AND ?)";
+				$parameters[] = $denomination['oz'] * (1 - self::WEIGHT_TOLERANCE);
+				$parameters[] = $denomination['oz'] * (1 + self::WEIGHT_TOLERANCE);
+			}
+
+			$clauses[] = "(p.metal_weight_oz > 0 AND " . implode(" AND ", $conditions) . ")";
+		}
+
+		if (empty($clauses)) {
+			return false;
+		}
+
+		return array(
+			'sql'    => "(" . implode(" OR ", $clauses) . ")",
+			'params' => $parameters,
+		);
+	}
+
+	public function filter_premium($bracket_keys, $spot_prices) {
+
+		$brackets = $this->premium_brackets();
+		$clauses = array();
+		$parameters = array();
+
+		foreach ((array) $bracket_keys as $key) {
+
+			if (!isset($brackets[$key])) {
+				continue;
+			}
+
+			$conditions = array();
+
+			if ($brackets[$key]['min'] !== null) {
+				$expression_parameters = array();
+				$conditions[] = $this->premium_expression($expression_parameters, $spot_prices) . " >= ?";
+				$parameters = array_merge($parameters, $expression_parameters);
+				$parameters[] = $brackets[$key]['min'];
+			}
+
+			if ($brackets[$key]['max'] !== null) {
+				$expression_parameters = array();
+				$conditions[] = $this->premium_expression($expression_parameters, $spot_prices) . " < ?";
+				$parameters = array_merge($parameters, $expression_parameters);
+				$parameters[] = $brackets[$key]['max'];
+			}
+
+			if (!empty($conditions)) {
+				$clauses[] = "(" . implode(" AND ", $conditions) . ")";
+			}
+		}
+
+		if (empty($clauses)) {
+			return false;
+		}
+
+		return array(
+			'sql'    => "(" . implode(" OR ", $clauses) . ")",
+			'params' => $parameters,
+		);
+	}
+
+	public function filter_price($minimum, $maximum) {
+
+		$conditions = array();
+		$parameters = array();
+
+		if ($minimum !== false && $minimum !== '' && $minimum !== null) {
+			$conditions[] = "p.lowest_price_eur >= ?";
+			$parameters[] = (float) $minimum;
+		}
+
+		if ($maximum !== false && $maximum !== '' && $maximum !== null) {
+			$conditions[] = "p.lowest_price_eur <= ?";
+			$parameters[] = (float) $maximum;
+		}
+
+		if (empty($conditions)) {
+			return false;
+		}
+
+		return array(
+			'sql'    => "(" . implode(" AND ", $conditions) . ")",
+			'params' => $parameters,
+		);
+	}
+
+	/**
+	 * The rows the facet counts are built from. This deliberately ignores
+	 * pagination: counting off a paginated array is what made the old weight
+	 * dropdown reflect only page one.
+	 */
+	public function get_facet_rows($filter_array = false) {
+
+		$db = new db;
+		$parameters = array();
+		$filter = $this->build_filter($filter_array, $parameters);
+
+		$sql = "SELECT p.id, p.metal, p.type, p.country_origin, p.manufacturer, p.metal_weight_oz, p.lowest_price_eur
+			FROM pricecomp_product p
+			LEFT JOIN pricecomp_product_bundle pb on pb.bundle_parent_product_id = p.id" . $filter;
+
+		$result = $db->query_select($sql, $parameters);
+
+		if ($result->num_rows > 0) {
+			return $result->rows;
+		}
+
+		return array();
+	}
+
+	private function facet_value($row, $facet_name, $spot_prices) {
+
+		switch ($facet_name) {
+			case 'country':
+				return $row['country_origin'];
+			case 'weight':
+				return $this->denomination_key($row['metal_weight_oz']);
+			case 'premium':
+				return $this->premium_bracket_key($row, $spot_prices);
+		}
+
+		return false;
+	}
+
+	/**
+	 * Counts each option against every *other* selected facet, so choosing one
+	 * country does not collapse the country list to that single entry.
+	 */
+	public function count_facets($rows, $selected = array(), $spot_prices = array()) {
+
+		$facet_names = array('country', 'weight', 'premium');
+		$counts = array();
+
+		foreach ($facet_names as $facet_name) {
+
+			$counts[$facet_name] = array();
+
+			foreach ($rows as $row) {
+
+				$matches_other_facets = true;
+
+				foreach ($facet_names as $other_name) {
+
+					if ($other_name == $facet_name || empty($selected[$other_name])) {
+						continue;
+					}
+
+					$other_value = $this->facet_value($row, $other_name, $spot_prices);
+
+					if ($other_value === false || !in_array($other_value, (array) $selected[$other_name])) {
+						$matches_other_facets = false;
+						break;
+					}
+				}
+
+				if (!$matches_other_facets) {
+					continue;
+				}
+
+				$value = $this->facet_value($row, $facet_name, $spot_prices);
+
+				if ($value === false) {
+					continue;
+				}
+
+				if (isset($counts[$facet_name][$value])) {
+					$counts[$facet_name][$value]++;
+				} else {
+					$counts[$facet_name][$value] = 1;
+				}
+			}
+		}
+
+		return $counts;
+	}
+
 	public function get_countries($filter_array = false) {
-		$db = new db;		
+		$db = new db;
 		require __DIR__ . '/../translation/translations.php';
 
 		$parameters = array();
@@ -628,6 +1029,36 @@ class Catalog {
 		}
 	}
 	
+	/**
+	 * Groups that actually hold products in the current category, most populous
+	 * first. The INNER JOIN drops ungrouped products, so this stays honest even
+	 * though product_group is only sparsely filled in.
+	 */
+	public function get_popular_product_groups($filter_array = false, $limit = 12) {
+
+		$db = new db;
+		$parameters = array();
+		$filter = $this->build_filter($filter_array, $parameters);
+
+		$sql = "SELECT pg.id, pg.name, pg.url, COUNT(DISTINCT p.id) as product_count
+			FROM pricecomp_product p
+			LEFT JOIN pricecomp_product_bundle pb on pb.bundle_parent_product_id = p.id
+			INNER JOIN pricecomp_product_group pg ON pg.id = p.product_group" . $filter . "
+			GROUP BY pg.id, pg.name, pg.url
+			ORDER BY product_count DESC, pg.name ASC
+			LIMIT ?";
+
+		$parameters[] = (int) $limit;
+
+		$result = $db->query_select($sql, $parameters);
+
+		if ($result->num_rows > 0) {
+			return $result->rows;
+		}
+
+		return array();
+	}
+
 	public function get_product_groups() {
 		$db = new db;
 
@@ -795,10 +1226,23 @@ class Catalog {
 	public function convert_currency($from, $to, $value, $currency_rates = false) {
 		
 		//currencies based on 1 EURO to ...
-		$converted_value = false;			
+		$converted_value = false;
 
 		if($currency_rates == false) {
 			$currency_rates = $this->get_currency_rates();
+		}
+
+		// Converting a currency to itself is a no-op, not a failure. Without
+		// this the EUR pages get false back and silently drop the value.
+		if($from == $to) {
+			return $value;
+		}
+
+		if($from == 'USD' && $to == 'EUR') {
+			$converted_value = $value / $currency_rates['USD'];
+		}
+		if($from == 'CHF' && $to == 'EUR') {
+			$converted_value = $value / $currency_rates['CHF'];
 		}
 
 		if($from == 'EUR' && $to == 'SEK') {

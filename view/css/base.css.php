@@ -19,6 +19,8 @@ $secondary = "#2589BD";
 
 $border_highlight = "#FFE1BD";
 $bgcolor_highlight = "#FFFFFF";
+
+$bgcolor_count = "#DEE5EC";
 ?>
 @import url('https://fonts.googleapis.com/css?family=Playfair+Display|Raleway|Quicksand');
 /*colour scheme: https://www.colourlovers.com/palette/2557991/Charcoal_and_Crayon*/
@@ -189,6 +191,26 @@ a.product-link {
 }
 .stockin {
 	color: #88A226;
+}
+/* Result counts next to a filter option or a product group link. */
+.filter-count {
+	display: inline-block;
+	min-width: 2.1em;
+	padding: 1px 6px;
+	margin-left: 5px;
+	border-radius: 4px;
+	background-color: <?php echo $bgcolor_count?>;
+	color: <?php echo $text_main?>;
+	font-size: 0.75em;
+	font-weight: 600;
+	line-height: 1.6;
+	text-align: center;
+	vertical-align: middle;
+}
+/* A ticked option carries the head colours so the active filters read at a glance. */
+.form-check-input:checked ~ .form-check-label .filter-count {
+	background-color: <?php echo $bgcolor_head?>;
+	color: <?php echo $text_head?>;
 }
 ul.shortcuts {
 	font-size: 0.9em;

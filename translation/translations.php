@@ -72,6 +72,16 @@ $translation["SE"]["sorting"] = array (
 	"weight_high"			=> "Högst vikt");
 
 $translation["SE"]["filter"] = array (
+	"premium"	=> "Pålägg över spot",
+	"premium_under_3"	=> "Under 3% över spot",
+	"premium_3_to_5"	=> "3 - 5% över spot",
+	"premium_5_to_10"	=> "5 - 10% över spot",
+	"premium_over_10"	=> "Över 10% över spot",
+	"weight_other"	=> "Övriga vikter",
+	"price_range"	=> "Pris",
+	"price_from"	=> "Från",
+	"price_to"	=> "Till",
+	"popular_groups"	=> "Populära produktgrupper",
 	"light" 		=> "Under 1 oz", 
 	"1oz" 			=> "1 oz", 
 	"medium" 		=> "1 - 5 oz", 
@@ -269,6 +279,16 @@ $translation["EN"]["sorting"] = array (
 );
 
 $translation["EN"]["filter"] = array (
+	"premium"	=> "Premium over spot",
+	"premium_under_3"	=> "Under 3% over spot",
+	"premium_3_to_5"	=> "3 - 5% over spot",
+	"premium_5_to_10"	=> "5 - 10% over spot",
+	"premium_over_10"	=> "Over 10% over spot",
+	"weight_other"	=> "Other weights",
+	"price_range"	=> "Price",
+	"price_from"	=> "From",
+	"price_to"	=> "To",
+	"popular_groups"	=> "Popular product groups",
 	"light" 		=> "Under 1 oz", 
 	"1oz" 			=> "1 oz", 
 	"medium" 		=> "1 - 5 oz", 
@@ -464,6 +484,16 @@ $translation["DE"]["sorting"] = array (
 );
 
 $translation["DE"]["filter"] = array (
+	"premium"	=> "Aufschlag über Spot",
+	"premium_under_3"	=> "Unter 3% über Spot",
+	"premium_3_to_5"	=> "3 - 5% über Spot",
+	"premium_5_to_10"	=> "5 - 10% über Spot",
+	"premium_over_10"	=> "Über 10% über Spot",
+	"weight_other"	=> "Andere Gewichte",
+	"price_range"	=> "Preis",
+	"price_from"	=> "Von",
+	"price_to"	=> "Bis",
+	"popular_groups"	=> "Beliebte Produktgruppen",
 	"light" 		=> "Unter 1 Unze", 
 	"1oz" 			=> "1 Unze", 
 	"medium" 		=> "1 - 5 Unzen", 
@@ -666,6 +696,16 @@ $translation["NL"]["sorting"] = array (
 );
 
 $translation["NL"]["filter"] = array (
+	"premium"	=> "Premie boven spot",
+	"premium_under_3"	=> "Onder 3% boven spot",
+	"premium_3_to_5"	=> "3 - 5% boven spot",
+	"premium_5_to_10"	=> "5 - 10% boven spot",
+	"premium_over_10"	=> "Meer dan 10% boven spot",
+	"weight_other"	=> "Andere gewichten",
+	"price_range"	=> "Prijs",
+	"price_from"	=> "Van",
+	"price_to"	=> "Tot",
+	"popular_groups"	=> "Populaire productgroepen",
 	"light" 		=> "Minder dan 1 oz", 
 	"1oz" 			=> "1 oz", 
 	"medium" 		=> "1 - 5 oz", 
@@ -865,6 +905,16 @@ $translation["FR"]["sorting"] = array (
 );
 
 $translation["FR"]["filter"] = array (
+	"premium"	=> "Prime sur le spot",
+	"premium_under_3"	=> "Moins de 3% au-dessus du spot",
+	"premium_3_to_5"	=> "3 - 5% au-dessus du spot",
+	"premium_5_to_10"	=> "5 - 10% au-dessus du spot",
+	"premium_over_10"	=> "Plus de 10% au-dessus du spot",
+	"weight_other"	=> "Autres poids",
+	"price_range"	=> "Prix",
+	"price_from"	=> "De",
+	"price_to"	=> "À",
+	"popular_groups"	=> "Groupes de produits populaires",
 	"light" 		=> "Moins de 1 oz", 
 	"1oz" 			=> "1 oz", 
 	"medium" 		=> "1 - 5 oz", 
@@ -1063,6 +1113,16 @@ $translation["ES"]["sorting"] = array (
 );
 
 $translation["ES"]["filter"] = array (
+	"premium"	=> "Prima sobre el spot",
+	"premium_under_3"	=> "Menos del 3% sobre el spot",
+	"premium_3_to_5"	=> "3 - 5% sobre el spot",
+	"premium_5_to_10"	=> "5 - 10% sobre el spot",
+	"premium_over_10"	=> "Más del 10% sobre el spot",
+	"weight_other"	=> "Otros pesos",
+	"price_range"	=> "Precio",
+	"price_from"	=> "Desde",
+	"price_to"	=> "Hasta",
+	"popular_groups"	=> "Grupos de productos populares",
 	"light" 		=> "Por debajo de 1 onza", 
 	"1oz" 			=> "1 onza", 
 	"medium" 		=> "1 - 5 onzas", 
