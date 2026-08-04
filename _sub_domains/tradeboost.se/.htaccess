@@ -1,0 +1,59 @@
+# Downgrade PHP (Surftown) - remove this line if you want newer and faster
+#AddType application/x-httpd-php56 .php
+
+# Default indexes (Surftown)
+DirectoryIndex index.html index.htm index.php index.php3 index.shtml index.wml index.pl index.cgi index.php4 index.phtml index.swf default.html default.htm default.php default.php3 default.shtml default.wml default.pl default.cgi default.php4 default.phtml default.swf hostedby.php
+
+DirectoryIndex index.php
+
+#Protect Directory with password
+#AuthName "Dialog prompt"
+#AuthType Basic
+#AuthUserFile /var/www/tradeboost.se/public_html/.htpasswd
+#Require valid-user
+
+# enable apache rewrite engine
+RewriteEngine on
+
+# set your rewrite base
+# Edit this in your init method too if you script lives in a subfolder
+RewriteBase /
+
+#Fix https redirect
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Deliver the folder or file directly if it exists on the server
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+php_flag log_errors on
+php_value error_log /var/www/tradeboost.eu/phperrors.log
+
+
+
+
+RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+RewriteCond %{REQUEST_URI} !(\.robots\.txt)$ [NC]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !^/public/
+#RewriteRule ^(css|js|images)/(.*)$ view/$1/$2 [L,NC]
+
+
+
+
+
+
+
+
+
+# Push every request to index.php
+#RewriteRule ^(.*)$ index.php [QSA]
+
+
