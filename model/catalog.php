@@ -1238,48 +1238,48 @@ class Catalog {
 			return $value;
 		}
 
-		if($from == 'USD' && $to == 'EUR') {
-			$converted_value = $value / $currency_rates['USD'];
-		}
-		if($from == 'CHF' && $to == 'EUR') {
-			$converted_value = $value / $currency_rates['CHF'];
+		/**
+		 * get_currency_rates() only sets a key when the currency has a row, so a
+		 * rate can be missing. Dividing by a missing rate throws a
+		 * DivisionByZeroError on PHP 8 and takes the whole page down, so every
+		 * rate is looked up through currency_rate() and an unusable one makes the
+		 * conversion return false - the same answer an unsupported pair gives.
+		 */
+		$rate_from_eur = $this->currency_rate($currency_rates, $from);
+		$rate_to_eur = $this->currency_rate($currency_rates, $to);
+
+		if($from == 'EUR' && $rate_to_eur !== false) {
+			$converted_value = $value * $rate_to_eur;
 		}
 
-		if($from == 'EUR' && $to == 'SEK') {
-			$converted_value = $value * $currency_rates['SEK'];
-		}
-		if($from == 'EUR' && $to == 'USD') {
-			$converted_value = $value * $currency_rates['USD'];
-		}
-		if($from == 'EUR' && $to == 'GBP') {
-			$converted_value = $value * $currency_rates['GBP'];
-		}
-		if($from == 'EUR' && $to == 'CHF') {
-			$converted_value = $value * $currency_rates['CHF'];
+		if($to == 'EUR' && $rate_from_eur !== false) {
+			$converted_value = $value / $rate_from_eur;
 		}
 
-		if($from == 'GBP' && $to == 'EUR') {
-			$converted_value = $value / $currency_rates['GBP'];
+		// Anything that is neither to nor from EUR goes via EUR.
+		if($from != 'EUR' && $to != 'EUR' && $rate_from_eur !== false && $rate_to_eur !== false) {
+			$converted_value = ($value / $rate_from_eur) * $rate_to_eur;
 		}
-		if($from == 'SEK' && $to == 'EUR') {
-			$converted_value = $value / $currency_rates['SEK'];
-		}
-		if($from == 'GBP' && $to == 'SEK') {
-			$converted_value = $value / $currency_rates['GBP']; //convert GBP to EUR
-			$converted_value = $this->convert_currency('EUR', 'SEK', $converted_value);
-		}
-		if($from == 'GBP' && $to == 'CHF') {
-			$converted_value = $value / $currency_rates['GBP']; //convert GBP to EUR
-			$converted_value = $this->convert_currency('EUR', 'CHF', $converted_value);
-		}
-		if($from == 'SEK' && $to == 'CHF') {
-			$converted_value = $value / $currency_rates['SEK']; //convert GBP to EUR
-			$converted_value = $this->convert_currency('EUR', 'CHF', $converted_value);
-		}
-
 
 		return $converted_value;
 
+	}
+
+	/**
+	 * Rates are quoted against 1 EUR. Returns false when the rate is missing or
+	 * unusable, so callers never divide by it.
+	 */
+	private function currency_rate($currency_rates, $currency) {
+
+		if ($currency == 'EUR') {
+			return 1.0;
+		}
+
+		if (isset($currency_rates[$currency]) && (float) $currency_rates[$currency] > 0) {
+			return (float) $currency_rates[$currency];
+		}
+
+		return false;
 	}
 
 
