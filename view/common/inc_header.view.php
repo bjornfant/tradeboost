@@ -97,7 +97,7 @@ switch ($page_language) {
 		<?php if(!empty($og_tags)) { 
 			foreach($og_tags as $og_tag) {
 		?>
-		<meta property="<? echo $og_tag['property']?>" content="<? echo $og_tag['content']?>" />
+		<meta property="<?php echo htmlspecialchars($og_tag['property'], ENT_QUOTES); ?>" content="<?php echo htmlspecialchars($og_tag['content'], ENT_QUOTES); ?>" />
 		<?php
 			}
 		}?>

@@ -231,7 +231,7 @@ switch ($page_language) {
 $og_tags[] = array('property' => 'og:title', 'content' => $page_meta_title);
 $og_tags[] = array('property' => 'og:description', 'content' => $page_meta_description);
 $og_tags[] = array('property' => 'og:type', 'content' => 'website');	
-$og_tags[] = array('property' => 'og:url', 'content' => 'https://'.$_SERVER[HTTP_HOST].$_SERVER[REQUEST_URI]);
+$og_tags[] = array('property' => 'og:url', 'content' => 'https://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
 
 $current_url = $_SERVER['QUERY_STRING'];
 
