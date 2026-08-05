@@ -108,7 +108,7 @@ switch ($page_language) {
 		<?php } elseif($tradeboost_filtered) { ?>
 		<meta name="robots" content="noindex,follow" />
 		<?php } ?>
-		<link rel="stylesheet" type="text/css" href="/css/base.css?ver=2.03" />
+		<link rel="stylesheet" type="text/css" href="/css/base.css?ver=2.04" />
 		<link rel="icon" href="https://tradeboost.eu/image/icons/icon32.png" sizes="32x32" />	
 		<link rel="icon" href="https://tradeboost.eu/image/icons/icon192.png" sizes="192x192" />
 		<link rel="icon" href="https://tradeboost.eu/image/icons/icon512.png" sizes="512x512" />

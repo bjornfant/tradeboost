@@ -999,8 +999,25 @@ class Catalog {
 
 		if($result->num_rows > 0) {
 			foreach($result->rows as $row) {
-				$country_name = $translation[COUNTRY_DEFAULT]['country'][$row['country_origin']];
-				$countries_array[$country_name] = $row['country_origin'];
+
+				$code = $row['country_origin'];
+
+				/**
+				 * The name is the key here, so an untranslated country used to
+				 * produce an empty key - a blank checkbox in the filter. Worse,
+				 * a second untranslated one would have taken the same empty key
+				 * and dropped a country from the list entirely. Falls back to
+				 * English and then to the code itself, which are both unique.
+				 */
+				if(!empty($translation[COUNTRY_DEFAULT]['country'][$code])) {
+					$country_name = $translation[COUNTRY_DEFAULT]['country'][$code];
+				} elseif(!empty($translation['EN']['country'][$code])) {
+					$country_name = $translation['EN']['country'][$code];
+				} else {
+					$country_name = $code;
+				}
+
+				$countries_array[$country_name] = $code;
 			}
 			ksort($countries_array);
 
