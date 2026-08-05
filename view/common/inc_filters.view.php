@@ -51,10 +51,23 @@
 	<hr/>
 </div>
 
-<?php foreach($filter_groups as $filter_group) { ?>
+<?php foreach($filter_groups as $filter_group) {
+
+	$option_count = count($filter_group['options']);
+
+	// A group only gets a toggle once there is enough behind it to be worth
+	// hiding, and a long one starts folded so the sidebar stays readable.
+	$collapsible = $option_count > 3;
+	$open = $option_count <= 15;
+?>
 <div class="col-12">
+<?php if($collapsible) { ?>
+	<details class="filter-group"<?php echo $open ? ' open' : ''; ?>>
+		<summary><?php echo htmlspecialchars($filter_group['label']); ?></summary>
+<?php } else { ?>
 	<h4><?php echo htmlspecialchars($filter_group['label']); ?></h4>
-	<div style="max-height:220px;overflow-y:auto;">
+<?php } ?>
+	<div class="filter-options">
 	<?php foreach($filter_group['options'] as $option) {
 		$option_id = $filter_group['name'] . '_' . preg_replace('/[^A-Za-z0-9_]/', '_', $option['value']);
 	?>
@@ -71,6 +84,9 @@
 		</div>
 	<?php } ?>
 	</div>
+<?php if($collapsible) { ?>
+	</details>
+<?php } ?>
 	<hr/>
 </div>
 <?php } ?>

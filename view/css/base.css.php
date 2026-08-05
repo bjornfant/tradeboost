@@ -192,6 +192,37 @@ a.product-link {
 .stockin {
 	color: #88A226;
 }
+/* A filter group folds away from its heading. Built on <details>, so it works
+   without script; the summary is styled to match the h4 the shorter groups use. */
+.filter-group summary {
+	font-family: "Quicksand", "Open sans", Arial;
+	font-weight: 900;
+	font-size: 1em;
+	color: <?php echo $headline_main?>;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	list-style: none;
+	margin-bottom: 8px;
+}
+.filter-group summary::-webkit-details-marker {
+	display: none;
+}
+.filter-group summary::after {
+	content: "";
+	flex: none;
+	width: 7px;
+	height: 7px;
+	margin-left: 8px;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate(45deg) translate(-2px, -2px);
+	transition: transform 0.15s ease;
+}
+.filter-group[open] summary::after {
+	transform: rotate(-135deg);
+}
 /* Result counts next to a filter option or a product group link. */
 .filter-count {
 	display: inline-block;
