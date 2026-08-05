@@ -10,47 +10,6 @@
 		  }
 	}
 
-	function UpdateQueryString(key, value, url) {
-	    if (!url) url = window.location.href;
-	    var re = new RegExp("([?&])" + key + "=.*?(&|#|$)(.*)", "gi"),
-	        hash;
-
-	    if (re.test(url)) {
-	        if (typeof value !== 'undefined' && value !== null) {
-	            return url.replace(re, '$1' + key + "=" + value + '$2$3');
-	        } 
-	        else {
-	            hash = url.split('#');
-	            url = hash[0].replace(re, '$1$3').replace(/(&|\?)$/, '');
-	            if (typeof hash[1] !== 'undefined' && hash[1] !== null) {
-	                url += '#' + hash[1];
-	            }
-	            return url;
-	        }
-	    }
-	    else {
-	        if (typeof value !== 'undefined' && value !== null) {
-	            var separator = url.indexOf('?') !== -1 ? '&' : '?';
-	            hash = url.split('#');
-	            url = hash[0] + separator + key + '=' + value;
-	            if (typeof hash[1] !== 'undefined' && hash[1] !== null) {
-	                url += '#' + hash[1];
-	            }
-	            return url;
-	        }
-	        else {
-	            return url;
-	        }
-	    }
-	}
-
-
-	function form_submit(form_id) {
-		var sort_value = document.getElementById('sort').value;
-		var new_url = (UpdateQueryString('sort', sort_value, ''));
-		window.location.replace(new_url);
-	}
-	
 
 	</script>
 		<div class="container-fluid page_head">
@@ -80,30 +39,7 @@
 						<form action="" method="get">
 							<div class="form-group">
 								 <div class="row">
-									<div class="col-12">
-									  	<h3><?php echo $translation[$page_language]['sort_by']; ?></h3>
-									   	<select name="sort" id="sort" class='form-control'>
-										<?php echo $options_sorting?>
-			    						</select>
-									  	<hr/>
-			    					</div>
-		    						<div class="col-12">						
-		    							<h3><?php echo $translation[$page_language]['do_filter']; ?></h3>
-										<?php echo $options_country; ?>
-									</div>
-		    						<div class="col-12"><?php echo $options_manufacturer; ?></div>
-									<div class="col-12"><?php echo $options_weight; ?></div>
-		    						<div class="col-12"><?php echo $options_quantity; ?></div>
-									<div class="col-12">
-										<p>
-										<div class="form-check">
-										  <?php echo $stock_only; ?>
-										  <label class="form-check-label" for="stock_only">
-										    <?php echo $translation[$page_language]['in_stock_only']; ?>
-										  </label>
-										</div>
-										</p>
-									</div>
+									<?php require BASE_DIR . '/view/common/inc_filters.view.php'; ?>
 									<div class="col-12" style="padding-top:8px;"><input type="submit" value="<?php echo $translation[$page_language]['do_filter']; ?>" class="btn btn-dark" />
 									<!--a href="product_catalog.php" class="btn btn-outline-light">Rensa filter</a--></div>
 								</div>

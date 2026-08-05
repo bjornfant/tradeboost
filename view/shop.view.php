@@ -86,15 +86,9 @@
 				
 				<?php
 				foreach($filtered_products as $product) {
-					$show_product = true;
-					if(!empty($_GET['country']) && $_GET['country'] != $product['country_origin']) { $show_product = false; }
-					if(!empty($metal) && $metal != $product['metal']) { $show_product = false; }
-					if(!empty($product_type) && $product_type != $product['type']) { $show_product = false; }
-					if(!empty($_GET['quantity']) && $_GET['quantity'] != $product['quantity']) { $show_product  = false; }
-					if(!empty($_GET['manufacturer']) && $_GET['manufacturer'] != $product['manufacturer_id']) { $show_product  = false; }
-					if(!empty($_GET['metal_weight_class']) && $_GET['metal_weight_class'] != $product['metal_weight_class']) { $show_product = false; }
-					if(!$product['store_products']) { $show_product = false;} //only show products that are for sale somewhere
-					
+					// The controller has already filtered; the view only skips
+					// products with nothing for sale.
+					$show_product = !empty($product['store_products']);
 
 					if($show_product) {
 						if(!empty($product['store_products'])) {
