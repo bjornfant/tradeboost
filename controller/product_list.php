@@ -6,6 +6,7 @@ require __DIR__ . '/../model/ads.php';
 require __DIR__ . '/../translation/translations.php';
 require __DIR__ . '/../translation/translations_product_list.php';
 require __DIR__ . '/../model/statistics.php';
+require_once __DIR__ . '/inc_filter.php';
 $page_view = new Statistic;
 $page_view->track_pageview(HTTP);
 
@@ -49,35 +50,7 @@ $category_params['only_with_offers'] = "(SELECT count(id) FROM pricecomp_store_p
 //only with an updated price
 $category_params['updated_price'] = "(p.lowest_price_eur/p.metal_weight_oz) > 0";
 
-/**
- * Filters are multi-select, so every value arrives as an array. Anything that
- * is not a plain scalar is dropped rather than passed on to the query.
- */
-if(!function_exists('tradeboost_filter_values')) {
-	function tradeboost_filter_values($key) {
-		if(!isset($_GET[$key])) { return array(); }
-		$values = array();
-		foreach((array) $_GET[$key] as $value) {
-			if(is_scalar($value) && (string) $value !== '') { $values[] = (string) $value; }
-		}
-		return array_values(array_unique($values));
-	}
-}
-
-if(!function_exists('tradeboost_filter_label')) {
-	function tradeboost_filter_label($translation, $language, $key, $fallback) {
-		if(isset($translation[$language]['filter'][$key])) { return $translation[$language]['filter'][$key]; }
-		if(isset($translation['EN']['filter'][$key])) { return $translation['EN']['filter'][$key]; }
-		return $fallback;
-	}
-}
-
-$selected_facets = array(
-	'country'      => tradeboost_filter_values('country'),
-	'manufacturer' => tradeboost_filter_values('manufacturer'),
-	'weight'       => tradeboost_filter_values('weight'),
-	'premium'      => tradeboost_filter_values('premium'),
-);
+$selected_facets = tradeboost_selected_facets();
 
 // lowest_price_eur is in EUR, so both the spot price and the price range have
 // to be converted out of the page currency before they reach the query.
@@ -86,17 +59,8 @@ $spot_prices_eur = array(
 	'SI' => $comodity_price_array['SI']['EUR']['price_per_oz'],
 );
 
-$price_min = (isset($_GET['price_min']) && is_scalar($_GET['price_min']) && $_GET['price_min'] !== '') ? (float) $_GET['price_min'] : false;
-$price_max = (isset($_GET['price_max']) && is_scalar($_GET['price_max']) && $_GET['price_max'] !== '') ? (float) $_GET['price_max'] : false;
-
-if(!function_exists('tradeboost_price_to_eur')) {
-	function tradeboost_price_to_eur($catalog, $currency, $value, $currency_rates) {
-		if($value === false) { return false; }
-		$converted = $catalog->convert_currency($currency, 'EUR', $value, $currency_rates);
-		// An unsupported currency pair would otherwise drop the filter entirely.
-		return ($converted === false) ? $value : $converted;
-	}
-}
+$price_min = tradeboost_price_bound('price_min');
+$price_max = tradeboost_price_bound('price_max');
 
 $price_min_eur = tradeboost_price_to_eur($catalog, $page_currency, $price_min, $currency_rates);
 $price_max_eur = tradeboost_price_to_eur($catalog, $page_currency, $price_max, $currency_rates);
@@ -135,23 +99,8 @@ if($premium_filter) { $category_params['premium'] = $premium_filter; }
 if(!isset($sort_params)) { $sort_params = array(); }
 
 
-/**
- * Sorting is part of the filter form rather than its own mechanism, so a
- * chosen sort survives the filters and vice versa. The map doubles as the
- * whitelist - anything not a key here falls back to the default.
- */
-$sort_orders = array(
-	'price_low'   => 'p.lowest_price_eur ASC',
-	'price_high'  => 'p.lowest_price_eur DESC',
-	'weight_low'  => 'p.metal_weight_oz ASC',
-	'weight_high' => 'p.metal_weight_oz DESC',
-);
-
-$sort = 'price_low';
-if(!empty($_GET['sort']) && is_scalar($_GET['sort']) && isset($sort_orders[$_GET['sort']])) {
-	$sort = (string) $_GET['sort'];
-}
-
+$sort_orders = tradeboost_sort_orders();
+$sort = tradeboost_sort_key();
 $order = $sort_orders[$sort];
 
 
@@ -166,146 +115,32 @@ $products_array = $catalog->get_products($category_params, false, $order, $limit
 //filter and sort
 $filtered_products = array();
 $first_item_description = "";
-$first_store_product = array();
 
 if(!empty($products_array)) {
 	foreach($products_array as $product) {
-		$show_product = true;
-		if(empty($product['store_products'])) { $show_product = false;} //only show products that are for sale somewhere
-		//if(!empty($_GET['metal_weight_class']) && $_GET['metal_weight_class'] != $product['metal_weight_class']) { $show_product = false; }
 
-		if($show_product) {
+		// Only products that are for sale somewhere.
+		if(empty($product['store_products'])) { continue; }
 
-			$first_store_product = reset($product['store_products']);
-			$product['offers'] = (int) count($product['store_products']);
-			
-			if(isset($_GET['stock_only'])) {
-				if($_GET['stock_only'] == 1) {
-					$first_store_product = reset($product['store_products_in_stock']);
-					$product['offers'] = (int) count($product['store_products_in_stock']);
-				}
-			} 
-
-			$product['best_price'] = $first_store_product['price'];
-			$product['best_price_per_oz'] = $first_store_product['price_per_oz'];
-			$product['best_price_compare_to_spot'] = 100*((float) $product['best_price_per_oz'] - (float) $comodity_price_array[$product['metal']][$page_currency]['price_per_oz'])/(float) $comodity_price_array[$product['metal']][$page_currency]['price_per_oz'];
-
-			$product['metal_type'] = strtolower($translation['EN'][$product['metal']].$product['type']);
-
-			if($first_store_product['price'] > 0) {
-				$filtered_products[] = $product; 
-			}
-			if(empty($first_item_description) && strlen($product['description_' . $page_language])>0) {
-				$first_item_description = $product['description_' . $page_language];
-			}
-
-			
+		$description = 'description_' . $page_language;
+		if(empty($first_item_description) && !empty($product[$description])) {
+			$first_item_description = $product[$description];
 		}
-		
-	}	
+
+		$product = tradeboost_prepare_product($product, $comodity_price_array, $page_currency, $translation);
+
+		if($product !== false && $product['best_price'] > 0) {
+			$filtered_products[] = $product;
+		}
+	}
 }
 
 $stock_only = "";
 
-// Handed to the view as data, like the filter groups.
-$sort_options = array();
-foreach($sort_orders as $sort_key => $sort_sql) {
-	$sort_options[] = array(
-		'value'    => $sort_key,
-		'label'    => isset($sorting_array[$sort_key]) ? $sorting_array[$sort_key] : $sort_key,
-		'selected' => ($sort_key == $sort),
-	);
-}
+$sort_options = tradeboost_sort_options($sorting_array, $sort);
 
-/**
- * Each filter group is handed to the view as data rather than as a blob of
- * HTML. An option is kept when it still matches something, or when it is
- * already ticked - otherwise unticking your own selection would be impossible.
- */
-$filter_groups = array();
-
-$country_options = array();
-if(!empty($countries_array)) {
-	foreach($countries_array as $country_name => $country_code) {
-		$count = isset($facet_counts['country'][$country_code]) ? $facet_counts['country'][$country_code] : 0;
-		$checked = in_array($country_code, $selected_facets['country']);
-		if($count == 0 && !$checked) { continue; }
-		$country_options[] = array('value' => $country_code, 'label' => $country_name, 'count' => $count, 'checked' => $checked);
-	}
-}
-if(count($country_options) > 1) {
-	$filter_groups[] = array(
-		'name'    => 'country',
-		'label'   => tradeboost_filter_label($translation, $page_language, 'land', 'Country'),
-		'options' => $country_options,
-	);
-}
-
-$weight_options = array();
-foreach($catalog->weight_denominations() as $denomination_key => $denomination) {
-	$count = isset($facet_counts['weight'][$denomination_key]) ? $facet_counts['weight'][$denomination_key] : 0;
-	$checked = in_array($denomination_key, $selected_facets['weight']);
-	if($count == 0 && !$checked) { continue; }
-	$weight_options[] = array(
-		'value'   => $denomination_key,
-		'label'   => $catalog->denomination_label($denomination),
-		'count'   => $count,
-		'checked' => $checked,
-	);
-}
-if(isset($facet_counts['weight']['other']) || in_array('other', $selected_facets['weight'])) {
-	$weight_options[] = array(
-		'value'   => 'other',
-		'label'   => tradeboost_filter_label($translation, $page_language, 'weight_other', 'Other weights'),
-		'count'   => isset($facet_counts['weight']['other']) ? $facet_counts['weight']['other'] : 0,
-		'checked' => in_array('other', $selected_facets['weight']),
-	);
-}
-if(count($weight_options) > 1) {
-	$filter_groups[] = array(
-		'name'    => 'weight',
-		'label'   => tradeboost_filter_label($translation, $page_language, 'metal_weight', 'Precious metal weight'),
-		'options' => $weight_options,
-	);
-}
-
-$premium_labels = array(
-	'under_3' => 'premium_under_3',
-	'3_to_5'  => 'premium_3_to_5',
-	'5_to_10' => 'premium_5_to_10',
-	'over_10' => 'premium_over_10',
-);
-$premium_fallbacks = array(
-	'under_3' => 'Under 3% over spot',
-	'3_to_5'  => '3 - 5% over spot',
-	'5_to_10' => '5 - 10% over spot',
-	'over_10' => 'Over 10% over spot',
-);
-$premium_options = array();
-foreach($catalog->premium_brackets() as $bracket_key => $bracket) {
-	$count = isset($facet_counts['premium'][$bracket_key]) ? $facet_counts['premium'][$bracket_key] : 0;
-	$checked = in_array($bracket_key, $selected_facets['premium']);
-	if($count == 0 && !$checked) { continue; }
-	$premium_options[] = array(
-		'value'   => $bracket_key,
-		'label'   => tradeboost_filter_label($translation, $page_language, $premium_labels[$bracket_key], $premium_fallbacks[$bracket_key]),
-		'count'   => $count,
-		'checked' => $checked,
-	);
-}
-if(count($premium_options) > 1) {
-	$filter_groups[] = array(
-		'name'    => 'premium',
-		'label'   => tradeboost_filter_label($translation, $page_language, 'premium', 'Premium over spot'),
-		'options' => $premium_options,
-	);
-}
-
-$price_filter_labels = array(
-	'heading' => tradeboost_filter_label($translation, $page_language, 'price_range', 'Price'),
-	'from'    => tradeboost_filter_label($translation, $page_language, 'price_from', 'From'),
-	'to'      => tradeboost_filter_label($translation, $page_language, 'price_to', 'To'),
-);
+$filter_groups = tradeboost_filter_groups($catalog, $facet_counts, $selected_facets, $countries_array, $translation, $page_language);
+$price_filter_labels = tradeboost_price_labels($translation, $page_language);
 
 // product_group is only sparsely filled in, so it reads better as a list of
 // links to the group pages than as a filter.

@@ -432,7 +432,10 @@ class Catalog {
 			WHERE sp.store_id = ? AND p.product_id IS NOT NULL AND sp.update_date >= ?"
 			. $order_string;
 
-			$all_products = $db->query_select($sql, array($store_id, date("Y-m-d", strtotime("-2 day"))));
+			// Same local-checkout widening as get_products(); see the note there.
+			$offer_age = (strpos(HTTP, 'https://') !== 0) ? "-1080 day" : "-2 day";
+
+			$all_products = $db->query_select($sql, array($store_id, date("Y-m-d", strtotime($offer_age))));
 
 			if($all_products->num_rows > 0) {
 

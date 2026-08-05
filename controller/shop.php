@@ -4,6 +4,7 @@ require __DIR__ . '/../model/commodity.php';
 require __DIR__ . '/../model/ads.php';
 require __DIR__ . '/../translation/translations.php';
 require __DIR__ . '/../model/statistics.php';
+require_once __DIR__ . '/inc_filter.php';
 $page_view = new Statistic;
 $page_view->track_pageview(HTTP);
 
@@ -35,124 +36,55 @@ if(isset($metal)) {
 
 $catalog = new Catalog;
 
-$sort = "sp.price ASC,";
-if(!empty($_GET['sort'])) {
-	switch ($_GET['sort']) {
-		case "price_low":
-			$sort = "sp.price ASC,";
-			break;
-		case "price_high":
-			$sort = "sp.price DESC,";
-			break;
-		case "weight_low":
-			$sort = "p.metal_weight_oz ASC,";
-			break;
-		case "weight_high":
-			$sort = "p.metal_weight_oz DESC,";
-			break;
-		default:
-			$sort = "sp.price ASC,";
-		}
-}
-
 $store = $catalog->get_product_stores(array($shop_id));
 $store = reset($store);
 
-$products_array = $catalog->get_store_products($shop_id, $sort);
+$products_array = $catalog->get_store_products($shop_id);
 $countries_array = $catalog->get_countries($category_params);
 $manufacturers_array = $catalog->get_manufacturers();
 
 //filter and sort
-$filtered_products = array();
+$prepared_products = array();
 foreach($products_array as $product) {
-	$show_product = true;
-	if(!empty($_GET['country']) && $_GET['country'] != $product['country_origin']) { $show_product = false; }
-	if(!empty($_GET['metal_weight_class']) && $_GET['metal_weight_class'] != $product['metal_weight_class']) { $show_product = false; }
-	
-	if($show_product) {
-		$product['offers'] = (int) count($product['store_products']);
-		$product['best_price'] = $product['store_products'][0]['price'];
-		$product['best_price_per_oz'] = $product['store_products'][0]['price_per_oz'];
-		$product['best_price_compare_to_spot'] = 100*((float) $product['best_price_per_oz'] - (float) $comodity_price_array[$product['metal']][$page_currency]['price_per_oz'])/(float) $comodity_price_array[$product['metal']][$page_currency]['price_per_oz'];
+	$product = tradeboost_prepare_product($product, $comodity_price_array, $page_currency, $translation);
+	if($product !== false) { $prepared_products[] = $product; }
+}
 
+$selected_facets = tradeboost_selected_facets();
+$sort = tradeboost_sort_key();
+
+$price_min = tradeboost_price_bound('price_min');
+$price_max = tradeboost_price_bound('price_max');
+
+// best_price here is this shop's price, so a premium bracket describes what the
+// shop charges rather than the market's best offer.
+$spot_prices = array(
+	'AU' => $comodity_price_array['AU'][$page_currency]['price_per_oz'],
+	'SI' => $comodity_price_array['SI'][$page_currency]['price_per_oz'],
+);
+
+$facet_counts = $catalog->count_facets(
+	tradeboost_facet_rows(tradeboost_price_filtered($prepared_products, $price_min, $price_max)),
+	$selected_facets,
+	$spot_prices
+);
+
+$filtered_products = array();
+foreach($prepared_products as $product) {
+	if(tradeboost_product_matches($catalog, $product, $selected_facets, $spot_prices, $price_min, $price_max)) {
 		$filtered_products[] = $product;
-
 	}
-	
 }
 
-$sort = false;
+$filtered_products = tradeboost_sort_products($filtered_products, $sort);
 
-if(!empty($_GET['sort'])) {
-	$sort = $_GET['sort'];	
-}
+$filter_groups = tradeboost_filter_groups($catalog, $facet_counts, $selected_facets, $countries_array, $translation, $page_language);
+$price_filter_labels = tradeboost_price_labels($translation, $page_language);
+$sort_options = tradeboost_sort_options($sorting_array, $sort);
 
-$filter_array = $catalog->get_filter($products_array);
-
-$options_country = "";
-$options_type = "";
-$options_quantity = "";
-$options_manufacturer = "";
-$options_weight = "";
+// The store query carries no in-stock flag, so this page does not offer the box.
 $stock_only = "";
 
-$options_sorting = "";
-
-
-if(count($countries_array) > 1) {
-	foreach($filter_array['country_origin'] as $key => $value) {
-		$selected = "";
-		if(isset($_GET['country'])) {
-			if($key == $_GET['country']) { $selected = "selected"; }
-		}
-		$country_name = "";
-		foreach($countries_array as $country => $short_name) {
-			if($key == $short_name) {
-				$country_name = $country;
-			}
-		}
-
-		$options_country .= "<option value='".$key."' ".$selected.">". $country_name ."</option>";
-	}
-	$options_country = $translation[$page_language]['filter']['land']." <select name='country' id='country' class='form-control'><option value=''>".$translation[$page_language]['filter']['view_all']."</option>" . $options_country . "</select>";	
-}
-
-if(count($filter_array['metal_weight_class']) > 1) {
-	foreach($filter_array['metal_weight_class'] as $key => $value) { 
-		$selected = "";
-		if(isset($_GET['metal_weight_class'])) {
-			if($key == $_GET['metal_weight_class']) { $selected = "selected"; }
-		}	
-		$options_weight .= "<option value='".$key."' ".$selected.">". $translation[$page_language]['filter'][$key] ."</option>";
-	}	
-	$options_weight = $translation[$page_language]['filter']['metal_weight']." <select name='metal_weight_class' id='metal_weight_class' class='form-control'><option value=''>".$translation[$page_language]['filter']['view_all']."</option>" . $options_weight . "</select>";
-}
-
-if(count($filter_array['manufacturer']) > 1) {
-	foreach($filter_array['manufacturer'] as $key => $value) { 
-		$selected = "";
-		if(isset($_GET['manufacturer'])) {
-			if($key == $_GET['manufacturer']) { $selected = "selected"; }
-		}			$options_manufacturer .= "<option value='".$key."' ".$selected.">". $manufacturers_array[$key]['name'] ."</option>";
-	}	
-	$options_manufacturer = $translation[$page_language]['filter']['manufacturer']." <select name='manufacturer' id='manufacturer' class='form-control'><option value=''>".$translation[$page_language]['filter']['view_all']."</option>" . $options_manufacturer . "</select>";
-}
-
-$selected = "";
-
-if(isset($_GET['stock_only'])) {
-	if($_GET['stock_only'] == 1) { $selected = "checked"; }
-}	
-$stock_only = "<input class='form-check-input' type='checkbox' value='1' id='stock_only' name='stock_only' " . $selected . " >";
-
-//Sorting
-if(count($sorting_array) > 1) {
-	foreach($sorting_array as $key => $value) { 
-		$selected = "";
-		if($key == $sort) { $selected = "selected"; }
-		$options_sorting .= "<option value='".$key."' ".$selected.">". $value ."</option>";
-	}	
-}
 
 
 //Shop offers
