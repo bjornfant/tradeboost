@@ -77,8 +77,18 @@ switch ($page_language) {
 
 
 
+
+/**
+ * COUNTRY_DEFAULT carries the language, but as a country code - SE for
+ * Swedish. The html lang attribute needs the language code, so sv, and the
+ * page had no lang at all before. Both search and ad matching read it to work
+ * out what language the page is written in.
+ */
+$page_lang_codes = array('SE' => 'sv', 'EN' => 'en', 'DE' => 'de', 'NL' => 'nl', 'FR' => 'fr', 'ES' => 'es');
+$page_lang = isset($page_lang_codes[$page_language]) ? $page_lang_codes[$page_language] : 'en';
+
 ?>
-<html>
+<html lang="<?php echo $page_lang; ?>">
 	<head>
 		<title><?php echo $page_meta_title ?> | <?php echo SITE_NAME ?></title>
 		<meta charset="utf-8">
