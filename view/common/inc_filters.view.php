@@ -21,6 +21,19 @@
 	<h3><?php echo $translation[$page_language]['do_filter']; ?></h3>
 </div>
 
+<?php if(!empty($stock_only)) { ?>
+<div class="col-12">
+	<p>
+	<div class="form-check">
+		<?php echo $stock_only; ?>
+		<label class="form-check-label" for="stock_only">
+			<?php echo $translation[$page_language]['in_stock_only']; ?>
+		</label>
+	</div>
+	</p>
+</div>
+<?php } ?>
+
 <div class="col-12">
 	<h4><?php echo htmlspecialchars($price_filter_labels['heading']); ?></h4>
 	<div class="row">
@@ -59,18 +72,5 @@
 	<?php } ?>
 	</div>
 	<hr/>
-</div>
-<?php } ?>
-
-<?php if(!empty($stock_only)) { ?>
-<div class="col-12">
-	<p>
-	<div class="form-check">
-		<?php echo $stock_only; ?>
-		<label class="form-check-label" for="stock_only">
-			<?php echo $translation[$page_language]['in_stock_only']; ?>
-		</label>
-	</div>
-	</p>
 </div>
 <?php } ?>

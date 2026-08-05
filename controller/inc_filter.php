@@ -350,7 +350,7 @@ function tradeboost_product_matches($catalog, $product, $selected, $spot_prices,
  */
 function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries_array, $translation, $language) {
 
-	$filter_groups = array();
+	$groups = array();
 
 	$country_options = array();
 	if(!empty($countries_array)) {
@@ -362,7 +362,7 @@ function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries
 		}
 	}
 	if(count($country_options) > 1) {
-		$filter_groups[] = array(
+		$groups['country'] = array(
 			'name'    => 'country',
 			'label'   => tradeboost_filter_label($translation, $language, 'land', 'Country'),
 			'options' => $country_options,
@@ -390,7 +390,7 @@ function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries
 		);
 	}
 	if(count($weight_options) > 1) {
-		$filter_groups[] = array(
+		$groups['weight'] = array(
 			'name'    => 'weight',
 			'label'   => tradeboost_filter_label($translation, $language, 'metal_weight', 'Precious metal weight'),
 			'options' => $weight_options,
@@ -416,11 +416,23 @@ function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries
 		);
 	}
 	if(count($premium_options) > 1) {
-		$filter_groups[] = array(
+		$groups['premium'] = array(
 			'name'    => 'premium',
 			'label'   => tradeboost_filter_label($translation, $language, 'premium', 'Premium over spot'),
 			'options' => $premium_options,
 		);
+	}
+
+	/**
+	 * The order the groups appear in the sidebar. Reorder this list to move
+	 * them; a group missing from $groups is simply skipped.
+	 */
+	$order = array('premium', 'weight', 'country');
+
+	$filter_groups = array();
+
+	foreach($order as $name) {
+		if(isset($groups[$name])) { $filter_groups[] = $groups[$name]; }
 	}
 
 	return $filter_groups;
