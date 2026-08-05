@@ -135,31 +135,24 @@ if($premium_filter) { $category_params['premium'] = $premium_filter; }
 if(!isset($sort_params)) { $sort_params = array(); }
 
 
-$order = " offers DESC";
-if(!empty($_GET['sort'])) {
-	switch ($_GET['sort']) {
-		case "price_low":
-			$order = "p.lowest_price_eur ASC";
-			break;
-		case "price_high":
-			$order = "p.lowest_price_eur DESC";
-			break;
-		case "weight_low":
-			$order = "p.metal_weight_oz ASC";
-			break;
-		case "weight_high":
-			$order = "p.metal_weight_oz DESC";
-			break;
-		case "best_compare_price":
-			$order = "(p.lowest_price_eur/p.metal_weight_oz) ASC";
-			break;
-		case "most_offers":
-			$order = " offers DESC";
-			break;
-		default:
-			$order = " offers DESC";
-		}
+/**
+ * Sorting is part of the filter form rather than its own mechanism, so a
+ * chosen sort survives the filters and vice versa. The map doubles as the
+ * whitelist - anything not a key here falls back to the default.
+ */
+$sort_orders = array(
+	'price_low'   => 'p.lowest_price_eur ASC',
+	'price_high'  => 'p.lowest_price_eur DESC',
+	'weight_low'  => 'p.metal_weight_oz ASC',
+	'weight_high' => 'p.metal_weight_oz DESC',
+);
+
+$sort = 'price_low';
+if(!empty($_GET['sort']) && is_scalar($_GET['sort']) && isset($sort_orders[$_GET['sort']])) {
+	$sort = (string) $_GET['sort'];
 }
+
+$order = $sort_orders[$sort];
 
 
 $products_total = $catalog->get_products($category_params, false, $order,false, false, true, false, $currency_rates);
@@ -212,14 +205,17 @@ if(!empty($products_array)) {
 	}	
 }
 
-$sort = false;
-
-if(!empty($_GET['sort'])) {
-	$sort = $_GET['sort'];	
-}
-
 $stock_only = "";
-$options_sorting = "";
+
+// Handed to the view as data, like the filter groups.
+$sort_options = array();
+foreach($sort_orders as $sort_key => $sort_sql) {
+	$sort_options[] = array(
+		'value'    => $sort_key,
+		'label'    => isset($sorting_array[$sort_key]) ? $sorting_array[$sort_key] : $sort_key,
+		'selected' => ($sort_key == $sort),
+	);
+}
 
 /**
  * Each filter group is handed to the view as data rather than as a blob of
@@ -322,15 +318,6 @@ if(isset($_GET['stock_only'])) {
 	if($_GET['stock_only'] == 1) { $selected = "checked"; }
 }	
 $stock_only = "<input class='form-check-input' type='checkbox' value='1' id='stock_only' name='stock_only' " . $selected . " >";
-
-//Sorting
-if(count($sorting_array) > 1) {
-	foreach($sorting_array as $key => $value) { 
-		$selected = "";
-		if($key == $sort) { $selected = "selected"; }
-		$options_sorting .= "<option value='".$key."' ".$selected.">". $value ."</option>";
-	}	
-}
 
 //page title and description
 if($product_type == "bar" && $metal == "AU") { 

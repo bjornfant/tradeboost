@@ -10,47 +10,6 @@
 		  }
 	}
 
-	function UpdateQueryString(key, value, url) {
-	    if (!url) url = window.location.href;
-	    var re = new RegExp("([?&])" + key + "=.*?(&|#|$)(.*)", "gi"),
-	        hash;
-
-	    if (re.test(url)) {
-	        if (typeof value !== 'undefined' && value !== null) {
-	            return url.replace(re, '$1' + key + "=" + value + '$2$3');
-	        } 
-	        else {
-	            hash = url.split('#');
-	            url = hash[0].replace(re, '$1$3').replace(/(&|\?)$/, '');
-	            if (typeof hash[1] !== 'undefined' && hash[1] !== null) {
-	                url += '#' + hash[1];
-	            }
-	            return url;
-	        }
-	    }
-	    else {
-	        if (typeof value !== 'undefined' && value !== null) {
-	            var separator = url.indexOf('?') !== -1 ? '&' : '?';
-	            hash = url.split('#');
-	            url = hash[0] + separator + key + '=' + value;
-	            if (typeof hash[1] !== 'undefined' && hash[1] !== null) {
-	                url += '#' + hash[1];
-	            }
-	            return url;
-	        }
-	        else {
-	            return url;
-	        }
-	    }
-	}
-
-
-	function form_submit(form_id) {
-		var sort_value = document.getElementById('sort').value;
-		var new_url = (UpdateQueryString('sort', sort_value, ''));
-		window.location.replace(new_url);
-	}
-	
 
 	</script>
 		<div class="container-fluid page_head">
@@ -91,8 +50,10 @@
 								 <div class="row">
 									<div class="col-12">
 									  	<h3><?php echo $translation[$page_language]['sort_by']; ?></h3>
-									   	<select name="sort" id="sort" class='form-control'>
-										<?php echo $options_sorting?>
+									   	<select name="sort" id="sort" class="form-control" onchange="this.form.submit();">
+										<?php foreach($sort_options as $sort_option) { ?>
+										<option value="<?php echo htmlspecialchars($sort_option['value'], ENT_QUOTES); ?>" <?php echo $sort_option['selected'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($sort_option['label']); ?></option>
+										<?php } ?>
 			    						</select>
 									  	<hr/>
 			    					</div>
