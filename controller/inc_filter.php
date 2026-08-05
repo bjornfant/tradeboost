@@ -111,6 +111,20 @@ function tradeboost_selected_facets() {
 	);
 }
 
+/**
+ * Printing a float follows LC_NUMERIC before PHP 8, and config.php sets a
+ * Swedish locale, so a price of 100.5 would be written into the form field as
+ * "100,5" - which a number input rejects, silently emptying the box.
+ */
+function tradeboost_decimal($value) {
+
+	if ($value === false || $value === null || $value === '') { return ''; }
+
+	$formatted = rtrim(rtrim(number_format((float) $value, 6, '.', ''), '0'), '.');
+
+	return ($formatted === '' || $formatted === '-') ? '0' : $formatted;
+}
+
 function tradeboost_price_bound($key) {
 
 	if(isset($_GET[$key]) && is_scalar($_GET[$key]) && $_GET[$key] !== '') {

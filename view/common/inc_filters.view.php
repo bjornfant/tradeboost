@@ -40,12 +40,12 @@
 		<div class="col-6">
 			<input type="number" min="0" step="1" class="form-control" name="price_min" id="price_min"
 				placeholder="<?php echo htmlspecialchars($price_filter_labels['from'], ENT_QUOTES); ?>"
-				value="<?php echo ($price_min !== false) ? htmlspecialchars($price_min, ENT_QUOTES) : ''; ?>" />
+				value="<?php echo htmlspecialchars(tradeboost_decimal($price_min), ENT_QUOTES); ?>" />
 		</div>
 		<div class="col-6">
 			<input type="number" min="0" step="1" class="form-control" name="price_max" id="price_max"
 				placeholder="<?php echo htmlspecialchars($price_filter_labels['to'], ENT_QUOTES); ?>"
-				value="<?php echo ($price_max !== false) ? htmlspecialchars($price_max, ENT_QUOTES) : ''; ?>" />
+				value="<?php echo htmlspecialchars(tradeboost_decimal($price_max), ENT_QUOTES); ?>" />
 		</div>
 	</div>
 	<hr/>

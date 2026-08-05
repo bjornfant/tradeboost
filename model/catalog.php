@@ -2,7 +2,7 @@
 class Catalog {
 
 	/**
-	 * Builds a WHERE clause from a filter list and collects the values to bind.
+	 * Builds a WHERE clause from a filter list and collects the values to bind.  
 	 *
 	 * Every entry that carries a value must use the array form, with ? in the
 	 * SQL and the value kept separate:
@@ -597,7 +597,7 @@ class Catalog {
 		$denominations = array();
 
 		foreach ($grams as $value) {
-			$denominations['g_' . str_replace('.', '_', (string) $value)] = array(
+			$denominations['g_' . str_replace('.', '_', $this->decimal_string($value))] = array(
 				'oz'    => $value / self::OZ_IN_GRAM,
 				'unit'  => 'gram',
 				'value' => $value,
@@ -605,7 +605,7 @@ class Catalog {
 		}
 
 		foreach ($ounces as $value) {
-			$denominations['oz_' . str_replace('.', '_', (string) $value)] = array(
+			$denominations['oz_' . str_replace('.', '_', $this->decimal_string($value))] = array(
 				'oz'    => (float) $value,
 				'unit'  => 'oz',
 				'value' => $value,
@@ -623,35 +623,52 @@ class Catalog {
 	 * Denominations are exact round numbers, so they are labelled without
 	 * format_weight()'s two decimals - "1 g", not "1.00 g".
 	 */
+	/**
+	 * Casting a float to string follows LC_NUMERIC before PHP 8, and config.php
+	 * sets a Swedish locale, so (string) 0.1 comes out as "0,1" on the server
+	 * and as "0.1" on a PHP 8 machine. number_format with an explicit decimal
+	 * point is locale-independent, which keeps both the labels and the option
+	 * keys identical on either version.
+	 */
+	private function decimal_string($value) {
+
+		$formatted = rtrim(rtrim(number_format((float) $value, 6, '.', ''), '0'), '.');
+
+		return ($formatted === '' || $formatted === '-') ? '0' : $formatted;
+	}
+
 	public function denomination_label($denomination) {
+
+		$value = (float) $denomination['value'];
 
 		if ($denomination['unit'] == 'gram') {
 
-			if ($denomination['value'] >= 1000) {
-				return (string) (float) ($denomination['value'] / 1000) . ' kg';
+			if ($value >= 1000) {
+				return $this->decimal_string($value / 1000) . ' kg';
 			}
 
-			return (string) (float) $denomination['value'] . ' g';
+			return $this->decimal_string($value) . ' g';
 		}
 
 		// Fractional ounces are traded as fractions, not decimals - a dealer
-		// lists a 1/10 oz Britannia, never a 0.1 oz one.
+		// lists a 1/10 oz Britannia, never a 0.1 oz one. Matched on the number
+		// rather than on a string, so no locale can get between the two.
 		$fractions = array(
-			'0.01' => '1/100',
-			'0.02' => '1/50',
-			'0.1'  => '1/10',
-			'0.2'  => '1/5',
-			'0.25' => '1/4',
-			'0.5'  => '1/2',
+			array(0.01, '1/100'),
+			array(0.02, '1/50'),
+			array(0.1,  '1/10'),
+			array(0.2,  '1/5'),
+			array(0.25, '1/4'),
+			array(0.5,  '1/2'),
 		);
 
-		$value = (string) (float) $denomination['value'];
-
-		if (isset($fractions[$value])) {
-			return $fractions[$value] . ' oz';
+		foreach ($fractions as $fraction) {
+			if (abs($value - $fraction[0]) < 0.000001) {
+				return $fraction[1] . ' oz';
+			}
 		}
 
-		return $value . ' oz';
+		return $this->decimal_string($value) . ' oz';
 	}
 
 	private function compare_denominations($a, $b) {
