@@ -1,6 +1,9 @@
 <?php
 
-if(!isset($page_meta_title)) { $page_meta_title = $page_title; } 
+// Defines functions only, and every page needs the indexing helpers below.
+require_once BASE_DIR . '/controller/inc_filter.php';
+
+if(!isset($page_meta_title)) { $page_meta_title = $page_title; }
 if(!isset($page_meta_description)) { $page_meta_description = "Compare prices and find the best gold and silver products for investment online"; } 
 
 $SHIPPING_COUNTRIES = array('AT','BE','BG','CH','CY','CZ','DE','DK','EE','ES','FI','FR','GB','GR','HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK');
@@ -83,16 +86,45 @@ switch ($page_language) {
 	    <meta name="description" content="<?php echo $page_meta_description; ?>">
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 		<meta name="gb-site-verification" content="a6f59b2284fb79abfc7059f7a92869d759dcfd9a">
-		<?php //Don't index 404
-		if(strlen($page_title) < 2) { ?> 
+		<?php
+		/**
+		 * A filtered or re-sorted listing is the same products in another order,
+		 * so it is kept out of the index while its links are still followed -
+		 * that is what lets the crawler reach the products through it.
+		 *
+		 * noindex and canonical are deliberately not combined: they tell the
+		 * crawler two different things about the same page. A filtered page gets
+		 * the directive, an unfiltered one gets the canonical.
+		 *
+		 * These URLs must stay crawlable for this to work. Disallowing them in
+		 * robots.txt would stop the crawler from ever reading the noindex, and
+		 * the address could still end up in the index without its content.
+		 */
+		$tradeboost_filtered = function_exists('tradeboost_has_active_filters') && tradeboost_has_active_filters();
+
+		//Don't index 404
+		if(strlen($page_title) < 2) { ?>
 		<meta name="robots" content="noindex" />
+		<?php } elseif($tradeboost_filtered) { ?>
+		<meta name="robots" content="noindex,follow" />
 		<?php } ?>
 		<link rel="stylesheet" type="text/css" href="/css/base.css?ver=2.03" />
 		<link rel="icon" href="https://tradeboost.eu/image/icons/icon32.png" sizes="32x32" />	
 		<link rel="icon" href="https://tradeboost.eu/image/icons/icon192.png" sizes="192x192" />
 		<link rel="icon" href="https://tradeboost.eu/image/icons/icon512.png" sizes="512x512" />
-		<?php if(!empty($cannonical)) { ?>
-		<link href="<?php echo $cannonical; ?>" rel="canonical" />
+		<?php
+		// The listings had no canonical at all, so each filter combination read
+		// as its own page. They now point at the unfiltered address.
+		$tradeboost_canonical = '';
+		if(!$tradeboost_filtered) {
+			if(!empty($cannonical)) {
+				$tradeboost_canonical = $cannonical;
+			} elseif(function_exists('tradeboost_canonical_url')) {
+				$tradeboost_canonical = tradeboost_canonical_url();
+			}
+		}
+		if(!empty($tradeboost_canonical)) { ?>
+		<link href="<?php echo htmlspecialchars($tradeboost_canonical, ENT_QUOTES); ?>" rel="canonical" />
 		<?php }?>
 		<?php if(!empty($og_tags)) { 
 			foreach($og_tags as $og_tag) {

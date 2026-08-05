@@ -36,6 +36,72 @@ function tradeboost_filter_label($translation, $language, $key, $fallback) {
 	return $fallback;
 }
 
+/**
+ * Query keys that narrow or reorder a listing without producing a page worth
+ * ranking on its own. "page" is deliberately absent: paginated pages carry
+ * content that exists nowhere else and stay indexable with their own canonical.
+ *
+ * metal and type are absent too. They scope a country page to a category, every
+ * product page links to one, and the result reads as its own listing rather
+ * than a filtered view.
+ */
+function tradeboost_filter_query_keys() {
+	return array(
+		'country', 'manufacturer', 'weight', 'premium',
+		'price_min', 'price_max', 'sort', 'stock_only',
+		'metal_weight_class',
+	);
+}
+
+function tradeboost_has_active_filters() {
+
+	foreach(tradeboost_filter_query_keys() as $key) {
+
+		if(!isset($_GET[$key])) { continue; }
+
+		$value = $_GET[$key];
+
+		if(is_array($value)) {
+			if(!empty($value)) { return true; }
+			continue;
+		}
+
+		if((string) $value !== '') { return true; }
+	}
+
+	return false;
+}
+
+/**
+ * The address the unfiltered version of the current page lives at.
+ *
+ * A few keys survive into the canonical because they define which listing this
+ * is rather than narrowing one: metal and type scope a country page to a
+ * category, and page 2 has to point at itself rather than at page 1. Everything
+ * in tradeboost_filter_query_keys() is dropped.
+ */
+function tradeboost_canonical_url() {
+
+	$url = rtrim(HTTP, '/') . strtok($_SERVER['REQUEST_URI'], '?');
+	$query = array();
+
+	foreach(array('metal', 'type') as $key) {
+		if(!empty($_GET[$key]) && is_scalar($_GET[$key])) {
+			$query[$key] = (string) $_GET[$key];
+		}
+	}
+
+	if(!empty($_GET['page']) && (int) $_GET['page'] > 1) {
+		$query['page'] = (int) $_GET['page'];
+	}
+
+	if(!empty($query)) {
+		$url .= '?' . http_build_query($query);
+	}
+
+	return $url;
+}
+
 function tradeboost_selected_facets() {
 	return array(
 		'country'      => tradeboost_filter_values('country'),
