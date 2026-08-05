@@ -592,7 +592,7 @@ class Catalog {
 		}
 
 		$grams = array(1, 2, 2.5, 3, 5, 10, 20, 50, 100, 250, 500, 1000, 2000, 5000, 10000);
-		$ounces = array(0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 20, 25, 50, 100);
+		$ounces = array(0.01, 0.02, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10, 15, 20, 25, 50, 100);
 
 		$denominations = array();
 
@@ -637,7 +637,10 @@ class Catalog {
 		// Fractional ounces are traded as fractions, not decimals - a dealer
 		// lists a 1/10 oz Britannia, never a 0.1 oz one.
 		$fractions = array(
+			'0.01' => '1/100',
+			'0.02' => '1/50',
 			'0.1'  => '1/10',
+			'0.2'  => '1/5',
 			'0.25' => '1/4',
 			'0.5'  => '1/2',
 		);
