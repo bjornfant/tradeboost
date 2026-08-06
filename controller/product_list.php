@@ -110,7 +110,11 @@ $page = 1;
 if(!empty($_GET['page'])) {
 	$page = $_GET['page'];
 }
-$products_array = $catalog->get_products($category_params, false, $order, $limit, $page, false, $currency_rates);
+// The seventh argument is $show_all_offers, not $currency_rates. Passing the
+// rates there made it truthy, which skipped the offer filtering entirely: the
+// offers column counted every shop ever seen, so ordering by it sorted on a
+// number several times larger than the one on the card.
+$products_array = $catalog->get_products($category_params, false, $order, $limit, $page, false, false, $currency_rates);
 
 //filter and sort
 $filtered_products = array();

@@ -152,6 +152,7 @@ function tradeboost_price_to_eur($catalog, $currency, $value, $currency_rates) {
  */
 function tradeboost_sort_orders() {
 	return array(
+		'popular'     => 'offers DESC',
 		'price_low'   => 'p.lowest_price_eur ASC',
 		'price_high'  => 'p.lowest_price_eur DESC',
 		'weight_low'  => 'p.metal_weight_oz ASC',
@@ -167,7 +168,7 @@ function tradeboost_sort_key() {
 		return (string) $_GET['sort'];
 	}
 
-	return 'price_low';
+	return 'popular';
 }
 
 function tradeboost_sort_options($sorting_array, $sort) {
@@ -194,6 +195,9 @@ function tradeboost_sort_products($products, $sort) {
 	if(empty($products)) { return $products; }
 
 	switch($sort) {
+		case 'price_low':
+			usort($products, 'tradeboost_compare_price_asc');
+			break;
 		case 'price_high':
 			usort($products, 'tradeboost_compare_price_desc');
 			break;
@@ -204,7 +208,8 @@ function tradeboost_sort_products($products, $sort) {
 			usort($products, 'tradeboost_compare_weight_desc');
 			break;
 		default:
-			usort($products, 'tradeboost_compare_price_asc');
+			// Popularity: how many shops list the product.
+			usort($products, 'tradeboost_compare_offers_desc');
 	}
 
 	return $products;
@@ -225,6 +230,12 @@ function tradeboost_compare_price_desc($a, $b) {
 
 function tradeboost_compare_weight_asc($a, $b) {
 	return tradeboost_compare_numbers((float) $a['metal_weight_oz'], (float) $b['metal_weight_oz']);
+}
+
+function tradeboost_compare_offers_desc($a, $b) {
+	$by_offers = tradeboost_compare_numbers((int) $b['offers'], (int) $a['offers']);
+	// Equal popularity falls back to price, so the order stays stable.
+	return ($by_offers !== 0) ? $by_offers : tradeboost_compare_price_asc($a, $b);
 }
 
 function tradeboost_compare_weight_desc($a, $b) {

@@ -210,6 +210,22 @@ class Catalog {
 				$filter_offers = " AND sp.update_date >= ?";
 				$parameters[] = date("Y-m-d", strtotime("-2 day"));
 			}
+
+			/**
+			 * get_all_matched_products() only counts shops that deliver here, and
+			 * that count is what the card shows. Without the same condition this
+			 * subquery returned several times as many - 604 against a shown 79 -
+			 * so ordering by it sorted on a number nobody could see.
+			 */
+			// Same exclusion get_all_matched_products applies: this shop is left out
+			// of the counts shown because its prices are unreliable.
+			$filter_offers .= " AND sp.store_id <> 16 ";
+			$filter_offers .= " AND s.ships_to_country IN ('EU', ?) ";
+			if(isset($_COOKIE["shipping_country"])) {
+				$parameters[] = substr($_COOKIE["shipping_country"], 0, 2);
+			} else {
+				$parameters[] = COUNTRY_DEFAULT;
+			}
 		}
 
 		$filter = $this->build_filter($filter_array, $parameters);
@@ -242,6 +258,7 @@ class Catalog {
 		$sql = "SELECT p.*, pb.quantity , (p.lowest_price_eur/p.metal_weight_oz) as best_compare_price,
 		(SELECT count(sp2p.id) FROM pricecomp_store_product_to_product sp2p
 		INNER JOIN pricecomp_store_product sp ON sp.id = sp2p.store_product_id
+		INNER JOIN pricecomp_store s ON s.id = sp.store_id
 		WHERE product_id = p.product_id ".$filter_offers.") as 'offers'
 		FROM pricecomp_product p
 		LEFT JOIN pricecomp_product_bundle pb on pb.bundle_parent_product_id = p.id"

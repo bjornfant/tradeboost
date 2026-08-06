@@ -64,6 +64,7 @@ $translation["SE"] = array(
 	"metal_worth"	=> "metallvärde just nu");
 
 $translation["SE"]["sorting"] = array (
+	"popular" 			=> "Populärt",
 	"most_offers" 			=> "Flest butikserbjudanden",
 	"best_compare_price" 	=> "Lägsta jämförelsepris /oz",
 	"price_low" 			=> "Lägsta pris",
@@ -274,6 +275,7 @@ $translation["EN"] = array(
 
 
 $translation["EN"]["sorting"] = array (
+	"popular" 			=> "Popular",
 	"most_offers" 			=> "Most online offers",
 	"best_compare_price" 	=> "Lowest price per oz",
 	"price_low" 			=> "Lowest price",
@@ -483,6 +485,7 @@ $translation["DE"] = array(
 
 
 $translation["DE"]["sorting"] = array (
+	"popular" 			=> "Beliebt",
 	"most_offers" 			=> "Shop-Angebote",
 	"best_compare_price" 	=> "Niedrigster Preis pro Unze",
 	"price_low" 			=> "Geringster Preis",
@@ -699,6 +702,7 @@ $translation["NL"] = array(
 
 
 $translation["NL"]["sorting"] = array (
+	"popular" 			=> "Populair",
 	"most_offers" 			=> "Winkelaanbiedingen",
 	"best_compare_price" 	=> "Laagste prijs per ounce waarde",
 	"price_low" 			=> "Laagste prijs",
@@ -913,6 +917,7 @@ $translation["FR"] = array(
 
 
 $translation["FR"]["sorting"] = array (
+	"popular" 			=> "Populaire",
 	"most_offers" 			=> "Offres de la boutique",
 	"best_compare_price" 	=> "Prix par once le plus bas",
 	"price_low" 			=> "Prix croissants",
@@ -1126,6 +1131,7 @@ $translation["ES"] = array(
 
 
 $translation["ES"]["sorting"] = array (
+	"popular" 			=> "Popular",
 	"most_offers" 			=> "Comprar ofertas",
 	"best_compare_price" 	=> "Precio más bajo por onza",
 	"price_low" 			=> "El precio más bajo",
