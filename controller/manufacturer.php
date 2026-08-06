@@ -72,7 +72,8 @@ foreach($prepared_products as $product) {
 $filtered_products = tradeboost_sort_products($filtered_products, $sort);
 
 $countries_array = $catalog->get_countries($category_params);
-$filter_groups = tradeboost_filter_groups($catalog, $facet_counts, $selected_facets, $countries_array, $translation, $page_language);
+// This page is not scoped to one metal or type, so it offers both as filters.
+$filter_groups = tradeboost_filter_groups($catalog, $facet_counts, $selected_facets, $countries_array, $translation, $page_language, array('metal', 'type', 'premium', 'weight', 'country'));
 $price_filter_labels = tradeboost_price_labels($translation, $page_language);
 $sort_options = tradeboost_sort_options($sorting_array, $sort);
 

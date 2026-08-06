@@ -104,6 +104,8 @@ function tradeboost_canonical_url() {
 
 function tradeboost_selected_facets() {
 	return array(
+		'metal'        => tradeboost_filter_values('metal'),
+		'type'         => tradeboost_filter_values('type'),
 		'country'      => tradeboost_filter_values('country'),
 		'manufacturer' => tradeboost_filter_values('manufacturer'),
 		'weight'       => tradeboost_filter_values('weight'),
@@ -242,6 +244,7 @@ function tradeboost_facet_rows($products) {
 	foreach($products as $product) {
 		$rows[] = array(
 			'metal'            => isset($product['metal']) ? $product['metal'] : '',
+			'type'             => isset($product['type']) ? $product['type'] : '',
 			'country_origin'   => isset($product['country_origin']) ? $product['country_origin'] : '',
 			'manufacturer'     => isset($product['manufacturer']) ? $product['manufacturer'] : '',
 			'metal_weight_oz'  => isset($product['metal_weight_oz']) ? $product['metal_weight_oz'] : 0,
@@ -337,6 +340,14 @@ function tradeboost_product_matches($catalog, $product, $selected, $spot_prices,
 	if($price_min !== false && $price < $price_min) { return false; }
 	if($price_max !== false && $price > $price_max) { return false; }
 
+	if(!empty($selected['metal'])) {
+		if(!in_array((string) $product['metal'], $selected['metal'])) { return false; }
+	}
+
+	if(!empty($selected['type'])) {
+		if(!in_array((string) $product['type'], $selected['type'])) { return false; }
+	}
+
 	if(!empty($selected['country'])) {
 		if(!in_array((string) $product['country_origin'], $selected['country'])) { return false; }
 	}
@@ -362,9 +373,32 @@ function tradeboost_product_matches($catalog, $product, $selected, $spot_prices,
  * An option is kept when it still matches something, or when it is already
  * ticked - otherwise unticking your own selection would be impossible.
  */
-function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries_array, $translation, $language) {
+function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries_array, $translation, $language, $order = null) {
 
 	$groups = array();
+
+	/**
+	 * Metal and type are built from whatever the data holds rather than from a
+	 * fixed list, so a third metal starts appearing on its own once products
+	 * carry it. The preferred order just puts the familiar ones first; anything
+	 * unrecognised follows in count order.
+	 *
+	 * Nothing ticked means nothing is excluded, which is how the other facets
+	 * behave too - an untouched sidebar shows gold and silver, coins and bars.
+	 */
+	$groups['metal'] = tradeboost_value_group(
+		'metal', tradeboost_filter_label($translation, $language, 'metal', 'Metal'),
+		isset($facet_counts['metal']) ? $facet_counts['metal'] : array(),
+		$selected['metal'], array('AU', 'SI'),
+		$translation, $language, array()
+	);
+
+	$groups['type'] = tradeboost_value_group(
+		'type', tradeboost_filter_label($translation, $language, 'product_type', 'Type'),
+		isset($facet_counts['type']) ? $facet_counts['type'] : array(),
+		$selected['type'], array('coin', 'bar'),
+		$translation, $language, array('coin' => 'coins', 'bar' => 'bars')
+	);
 
 	$country_options = array();
 	if(!empty($countries_array)) {
@@ -441,15 +475,59 @@ function tradeboost_filter_groups($catalog, $facet_counts, $selected, $countries
 	 * The order the groups appear in the sidebar. Reorder this list to move
 	 * them; a group missing from $groups is simply skipped.
 	 */
-	$order = array('premium', 'weight', 'country');
+	if($order === null) { $order = array('premium', 'weight', 'country'); }
 
 	$filter_groups = array();
 
 	foreach($order as $name) {
-		if(isset($groups[$name])) { $filter_groups[] = $groups[$name]; }
+		if(!empty($groups[$name])) { $filter_groups[] = $groups[$name]; }
 	}
 
 	return $filter_groups;
+}
+
+/**
+ * Builds one checkbox group straight from the facet counts. $preferred lists the
+ * values to show first; $label_keys maps a value onto a key in the filter
+ * translations, otherwise the value is looked up as a top level translation
+ * (AU is already "Guld") and falls back to the raw value.
+ */
+function tradeboost_value_group($name, $label, $counts, $selected_values, $preferred, $translation, $language, $label_keys) {
+
+	$values = $preferred;
+
+	foreach(array_keys($counts) as $value) {
+		if(!in_array($value, $values)) { $values[] = $value; }
+	}
+
+	$options = array();
+
+	foreach($values as $value) {
+
+		$count = isset($counts[$value]) ? $counts[$value] : 0;
+		$checked = in_array((string) $value, $selected_values);
+
+		if($count == 0 && !$checked) { continue; }
+
+		if(isset($label_keys[$value])) {
+			$option_label = tradeboost_filter_label($translation, $language, $label_keys[$value], $value);
+		} elseif(!empty($translation[$language][$value])) {
+			$option_label = $translation[$language][$value];
+		} else {
+			$option_label = $value;
+		}
+
+		$options[] = array(
+			'value'   => $value,
+			'label'   => ucfirst($option_label),
+			'count'   => $count,
+			'checked' => $checked,
+		);
+	}
+
+	if(count($options) < 2) { return null; }
+
+	return array('name' => $name, 'label' => $label, 'options' => $options);
 }
 
 function tradeboost_price_labels($translation, $language) {

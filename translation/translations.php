@@ -72,6 +72,10 @@ $translation["SE"]["sorting"] = array (
 	"weight_high"			=> "Högst vikt");
 
 $translation["SE"]["filter"] = array (
+	"metal"	=> "Metall",
+	"product_type"	=> "Typ",
+	"coins"	=> "Mynt",
+	"bars"	=> "Tackor",
 	"premium"	=> "Pålägg över spot",
 	"premium_under_3"	=> "Under 3% över spot",
 	"premium_3_to_5"	=> "3 - 5% över spot",
@@ -279,6 +283,10 @@ $translation["EN"]["sorting"] = array (
 );
 
 $translation["EN"]["filter"] = array (
+	"metal"	=> "Metal",
+	"product_type"	=> "Type",
+	"coins"	=> "Coins",
+	"bars"	=> "Bars",
 	"premium"	=> "Premium over spot",
 	"premium_under_3"	=> "Under 3% over spot",
 	"premium_3_to_5"	=> "3 - 5% over spot",
@@ -484,6 +492,10 @@ $translation["DE"]["sorting"] = array (
 );
 
 $translation["DE"]["filter"] = array (
+	"metal"	=> "Metall",
+	"product_type"	=> "Art",
+	"coins"	=> "Münzen",
+	"bars"	=> "Barren",
 	"premium"	=> "Aufschlag über Spot",
 	"premium_under_3"	=> "Unter 3% über Spot",
 	"premium_3_to_5"	=> "3 - 5% über Spot",
@@ -696,6 +708,10 @@ $translation["NL"]["sorting"] = array (
 );
 
 $translation["NL"]["filter"] = array (
+	"metal"	=> "Metaal",
+	"product_type"	=> "Type",
+	"coins"	=> "Munten",
+	"bars"	=> "Baren",
 	"premium"	=> "Premie boven spot",
 	"premium_under_3"	=> "Onder 3% boven spot",
 	"premium_3_to_5"	=> "3 - 5% boven spot",
@@ -906,6 +922,10 @@ $translation["FR"]["sorting"] = array (
 );
 
 $translation["FR"]["filter"] = array (
+	"metal"	=> "Métal",
+	"product_type"	=> "Type",
+	"coins"	=> "Pièces",
+	"bars"	=> "Lingots",
 	"premium"	=> "Prime sur le spot",
 	"premium_under_3"	=> "Moins de 3% au-dessus du spot",
 	"premium_3_to_5"	=> "3 - 5% au-dessus du spot",
@@ -1115,6 +1135,10 @@ $translation["ES"]["sorting"] = array (
 );
 
 $translation["ES"]["filter"] = array (
+	"metal"	=> "Metal",
+	"product_type"	=> "Tipo",
+	"coins"	=> "Monedas",
+	"bars"	=> "Lingotes",
 	"premium"	=> "Prima sobre el spot",
 	"premium_under_3"	=> "Menos del 3% sobre el spot",
 	"premium_3_to_5"	=> "3 - 5% sobre el spot",

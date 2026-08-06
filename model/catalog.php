@@ -923,6 +923,10 @@ class Catalog {
 	private function facet_value($row, $facet_name, $spot_prices) {
 
 		switch ($facet_name) {
+			case 'metal':
+				return $row['metal'];
+			case 'type':
+				return $row['type'];
 			case 'country':
 				return $row['country_origin'];
 			case 'weight':
@@ -940,7 +944,7 @@ class Catalog {
 	 */
 	public function count_facets($rows, $selected = array(), $spot_prices = array()) {
 
-		$facet_names = array('country', 'weight', 'premium');
+		$facet_names = array('metal', 'type', 'country', 'weight', 'premium');
 		$counts = array();
 
 		foreach ($facet_names as $facet_name) {
