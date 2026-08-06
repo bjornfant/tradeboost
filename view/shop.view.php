@@ -73,8 +73,6 @@
 							<div class="form-group">
 								 <div class="row">
 									<?php require BASE_DIR . '/view/common/inc_filters.view.php'; ?>
-									<div class="col-12" style="padding-top:8px;"><input type="submit" value="Filtrera" class="btn btn-dark" />
-									<!--a href="product_catalog.php" class="btn btn-outline-light">Rensa filter</a--></div>
 								</div>
 							</div>
 						</form>

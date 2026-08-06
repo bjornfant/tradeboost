@@ -73,6 +73,7 @@ $translation["SE"]["sorting"] = array (
 	"weight_high"			=> "Högst vikt");
 
 $translation["SE"]["filter"] = array (
+	"clear_filter"	=> "Rensa filter",
 	"metal"	=> "Metall",
 	"product_type"	=> "Typ",
 	"coins"	=> "Mynt",
@@ -285,6 +286,7 @@ $translation["EN"]["sorting"] = array (
 );
 
 $translation["EN"]["filter"] = array (
+	"clear_filter"	=> "Clear filters",
 	"metal"	=> "Metal",
 	"product_type"	=> "Type",
 	"coins"	=> "Coins",
@@ -495,6 +497,7 @@ $translation["DE"]["sorting"] = array (
 );
 
 $translation["DE"]["filter"] = array (
+	"clear_filter"	=> "Filter zurücksetzen",
 	"metal"	=> "Metall",
 	"product_type"	=> "Art",
 	"coins"	=> "Münzen",
@@ -712,6 +715,7 @@ $translation["NL"]["sorting"] = array (
 );
 
 $translation["NL"]["filter"] = array (
+	"clear_filter"	=> "Filters wissen",
 	"metal"	=> "Metaal",
 	"product_type"	=> "Type",
 	"coins"	=> "Munten",
@@ -927,6 +931,7 @@ $translation["FR"]["sorting"] = array (
 );
 
 $translation["FR"]["filter"] = array (
+	"clear_filter"	=> "Effacer les filtres",
 	"metal"	=> "Métal",
 	"product_type"	=> "Type",
 	"coins"	=> "Pièces",
@@ -1141,6 +1146,7 @@ $translation["ES"]["sorting"] = array (
 );
 
 $translation["ES"]["filter"] = array (
+	"clear_filter"	=> "Borrar filtros",
 	"metal"	=> "Metal",
 	"product_type"	=> "Tipo",
 	"coins"	=> "Monedas",

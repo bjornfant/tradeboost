@@ -102,6 +102,63 @@ function tradeboost_canonical_url() {
 	return $url;
 }
 
+/**
+ * Whether anything is worth clearing. Sorting is left out - it is a separate
+ * control, and the button says filters.
+ *
+ * metal and type are checked in their array form only: that is how the shop and
+ * manufacturer pages send them as filters, while a country page carries them as
+ * plain scalars to scope which listing it is.
+ */
+function tradeboost_has_clearable_filters() {
+
+	foreach(tradeboost_filter_query_keys() as $key) {
+
+		if($key === 'sort' || !isset($_GET[$key])) { continue; }
+
+		$value = $_GET[$key];
+
+		if(is_array($value)) {
+			if(!empty($value)) { return true; }
+			continue;
+		}
+
+		if((string) $value !== '') { return true; }
+	}
+
+	foreach(array('metal', 'type') as $key) {
+		if(isset($_GET[$key]) && is_array($_GET[$key]) && !empty($_GET[$key])) { return true; }
+	}
+
+	return false;
+}
+
+/**
+ * The same page with the filters dropped. The scalar metal and type survive,
+ * since on a country page they say which listing this is rather than narrowing
+ * it, and a non-default sort survives because clearing filters should not also
+ * undo the reordering.
+ */
+function tradeboost_clear_filters_url() {
+
+	$url = rtrim(HTTP, '/') . strtok($_SERVER['REQUEST_URI'], '?');
+	$query = array();
+
+	foreach(array('metal', 'type') as $key) {
+		if(!empty($_GET[$key]) && is_scalar($_GET[$key])) {
+			$query[$key] = (string) $_GET[$key];
+		}
+	}
+
+	$sort = tradeboost_sort_key();
+	$defaults = array_keys(tradeboost_sort_orders());
+	if($sort !== reset($defaults)) { $query['sort'] = $sort; }
+
+	if(!empty($query)) { $url .= '?' . http_build_query($query); }
+
+	return $url;
+}
+
 function tradeboost_selected_facets() {
 	return array(
 		'metal'        => tradeboost_filter_values('metal'),

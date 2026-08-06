@@ -90,3 +90,10 @@
 	<hr/>
 </div>
 <?php } ?>
+
+<div class="col-12" style="padding-top:8px;">
+	<input type="submit" value="<?php echo htmlspecialchars($translation[$page_language]['do_filter'], ENT_QUOTES); ?>" class="btn btn-dark" />
+	<?php if(tradeboost_has_clearable_filters()) { ?>
+	<a href="<?php echo htmlspecialchars(tradeboost_clear_filters_url(), ENT_QUOTES); ?>" class="btn btn-outline-dark"><?php echo htmlspecialchars(tradeboost_filter_label($translation, $page_language, 'clear_filter', 'Clear filters')); ?></a>
+	<?php } ?>
+</div>
