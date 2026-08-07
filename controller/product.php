@@ -200,6 +200,92 @@ if(!empty($schema_org_faqpage)) {
 
 
 $og_tags = array();
+/**
+ * Product with AggregateOffer. This is a comparison page - the same coin from a
+ * dozen shops - so the aggregate is the honest shape: a price range and a
+ * count, with each shop listed beneath it as its own offer.
+ *
+ * Prices are written as strings with a decimal point. Casting a float to string
+ * follows the locale before PHP 8, and config.php sets a Swedish one, so a
+ * price would otherwise reach the markup as "1 234,50".
+ */
+$schema_org_product = array();
+
+if(!empty($product['store_products'])) {
+
+	$offer_prices = array();
+	$schema_offers = array();
+
+	/**
+	 * Every offer counts towards the range and the total, but only the cheapest
+	 * few are written out. All 264 of them on a Krugerrand came to 65 kB, 13% of
+	 * the page, and the aggregate is what a search result reads anyway.
+	 * store_products arrives sorted by price, so these are the cheapest.
+	 */
+	$schema_offer_limit = 25;
+	$schema_offer_count = 0;
+
+	foreach($product['store_products'] as $store_product) {
+
+		$price = (float) $store_product['price'];
+		if($price <= 0) { continue; }
+
+		$offer_prices[] = $price;
+		$schema_offer_count++;
+
+		if(count($schema_offers) >= $schema_offer_limit) { continue; }
+
+		$schema_offers[] = array(
+			'@type'         => 'Offer',
+			'url'           => $store_product['url'],
+			'price'         => number_format($price, 2, '.', ''),
+			'priceCurrency' => $page_currency,
+			'availability'  => (!empty($store_product['stock']) && $store_product['stock'] == 1)
+				? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+			'seller'        => array('@type' => 'Organization', 'name' => $store_product['store_name']),
+		);
+	}
+
+	if(!empty($offer_prices)) {
+
+		$schema_org_product = array(
+			'@context'    => 'https://schema.org',
+			'@type'       => 'Product',
+			'name'        => $page_title,
+			'description' => trim(strip_tags($page_meta_description)),
+			'url'         => $cannonical,
+			'offers'      => array(
+				'@type'         => 'AggregateOffer',
+				'priceCurrency' => $page_currency,
+				'lowPrice'      => number_format(min($offer_prices), 2, '.', ''),
+				'highPrice'     => number_format(max($offer_prices), 2, '.', ''),
+				'offerCount'    => $schema_offer_count,
+				'offers'        => $schema_offers,
+			),
+		);
+
+		if(!empty($product['product_image'])) {
+			$schema_org_product['image'] = 'https://tradeboost.imgix.net/' . $product['product_image'] . '?w=500&h=500';
+		}
+
+		if(!empty($product['manufacturer_name'])) {
+			$schema_org_product['brand'] = array('@type' => 'Brand', 'name' => $product['manufacturer_name']);
+		}
+
+		if(!empty($product['country_origin']) && !empty($translation[$page_language]['country'][$product['country_origin']])) {
+			$schema_org_product['countryOfOrigin'] = $translation[$page_language]['country'][$product['country_origin']];
+		}
+
+		if(!empty($product['metal_weight_oz']) && $product['metal_weight_oz'] > 0) {
+			$schema_org_product['weight'] = array(
+				'@type'    => 'QuantitativeValue',
+				'value'    => number_format((float) $product['metal_weight_oz'], 6, '.', ''),
+				'unitCode' => 'APZ', // troy ounce
+			);
+		}
+	}
+}
+
 $og_tags[] = array('property' => 'og:title', 'content' => $page_meta_title);
 $og_tags[] = array('property' => 'og:description', 'content' => $page_meta_description);
 $og_tags[] = array('property' => 'og:type', 'content' => 'website');	

@@ -1,29 +1,36 @@
 <?php
+/**
+ * Two independent blocks: the product, and the questions beneath it.
+ *
+ * Both are encoded rather than concatenated. The questions carry product names
+ * and prices, so a stray quote used to break the JSON silently, and the closing
+ * script tag sat outside the FAQ condition - a page without questions emitted a
+ * closing tag with nothing opening it.
+ */
+if(!empty($schema_org_product)) { ?>
+<script type="application/ld+json"><?php echo json_encode($schema_org_product, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+<?php }
+
 if(!empty($schema_org_faqpage)) {
 
+	$schema_questions = array();
 
-	foreach ($schema_org_faqpage as $faq) {
-		$json_answers_array[] = '{
-	      "@type": "Question",
-	      "name": "'.$faq['question'].'",
-	      "acceptedAnswer": {
-	        "@type": "Answer",
-	        "text": "'.$faq['answer'].'"
-	      }
-	    }';
+	foreach($schema_org_faqpage as $faq) {
+		$schema_questions[] = array(
+			'@type'          => 'Question',
+			'name'           => $faq['question'],
+			'acceptedAnswer' => array('@type' => 'Answer', 'text' => $faq['answer']),
+		);
 	}
 
+	$schema_faq = array(
+		'@context'   => 'https://schema.org',
+		'@type'      => 'FAQPage',
+		'mainEntity' => $schema_questions,
+	);
 ?>
-<script type="application/ld+json">
-  {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    <?php echo implode(",", $json_answers_array);?>
-  ]
-}
-<?php } ?>
-</script>		
+<script type="application/ld+json"><?php echo json_encode($schema_faq, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+<?php } ?>		
 		<div class="container-fluid page_head">
 			<div class="container">
 				<div class="row">
