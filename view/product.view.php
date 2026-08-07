@@ -255,7 +255,7 @@ if(!empty($schema_org_faqpage)) {
 											$offer_store_pickup = "<span class='stockin'>✓</span> " . $translation[$page_language]['shop']['offer_store_pickup'];
 										}
 
-										echo "<h3><img src='https://tradeboost.eu/image/icons/flags/" . $country_flags[$store_info['country']] . ".png' style='width:28px' /> <a href='/shop/" . $store_info['url'] . "'>" . $store_info['name'] . "</a> <a href='/shop/" . $store_info['url'] . "' class='product-link'><small>". $translation[$page_language]['read_more'] ."</small></a></h3><small>" . $translation[$page_language]['shop']['shipping_fee'] . ": <i>" . $store_info['shipping_fee'] . "</i></small><br><div class='d-none d-md-block'><small>";
+										echo "<h3><img src='https://tradeboost.eu/image/icons/flags/" . $country_flags[$store_info['country']] . ".png' style='width:28px' alt='' /> <a href='/shop/" . $store_info['url'] . "'>" . $store_info['name'] . "</a> <a href='/shop/" . $store_info['url'] . "' class='product-link'><small>". $translation[$page_language]['read_more'] ."</small></a></h3><small>" . $translation[$page_language]['shop']['shipping_fee'] . ": <i>" . $store_info['shipping_fee'] . "</i></small><br><div class='d-none d-md-block'><small>";
 
 										echo $offer_insured . " &nbsp; ";
 										echo $offer_storage . " &nbsp; "; 
@@ -328,12 +328,12 @@ if(!empty($schema_org_faqpage)) {
 					<small>Ad</small><br>
 					<a href="https://www.bullionbypost.eu/accounts/login/?referral_code=WGO3SHPC"  rel="nofollow"  target="_blank">
 					<div style="width:100%;text-align:center;background-color:#fff">
-						<img src="https://tradeboost.eu/image/logo_bbp.png" style="max-width:100%" /><br>
+						<img src="https://tradeboost.eu/image/logo_bbp.png" style="max-width:100%" alt="BullionByPost" /><br>
 						<p>
 							<h2>Get a free 1 oz Silver Britannia on your first order</h2>
 						</p>
 						<p>
-							<img src="https://tradeboost.imgix.net/coin_1_oz_britannia_si_gb_gb.png?w=240&h=240" style="max-width:100%" />
+							<img src="https://tradeboost.imgix.net/coin_1_oz_britannia_si_gb_gb.png?w=240&h=240" style="max-width:100%" alt="1 oz Britannia" />
 						</p>
 						<p>
 							Get a free coin on your first order over €300 <br> 
@@ -414,7 +414,7 @@ if(!empty($schema_org_faqpage)) {
 								<div class="col-12 text-center" style="padding-bottom:20px;">
 									<?php $product_image = '';
 									if(!empty($item->galleryURL[0])) { 
-										$product_image = "<img src='". str_replace("l140","l640",$item->galleryURL[0]) . "' style='width:100%'/>"; //l640 = hack to display a bigger thumbnail
+										$product_image = "<img src='". str_replace("l140","l640",$item->galleryURL[0]) . "' style='width:100%' alt='" . htmlspecialchars((string) $item->title[0], ENT_QUOTES) . "'/>"; //l640 = hack to display a bigger thumbnail
 									} 
 									echo $product_image;
 									?>
@@ -563,7 +563,7 @@ if(!empty($schema_org_faqpage)) {
 										<div class="col-12 text-center">
 											<?php $product_image = '';
 											if(!empty($item->ImageLinks->string[0])) { 
-												$product_image = "<img src='".$item->ImageLinks->string[0] . "' style='width:100%'/>"; 
+												$product_image = "<img src='".$item->ImageLinks->string[0] . "' style='width:100%' alt='" . htmlspecialchars((string) $item->ShortDescription, ENT_QUOTES) . "'/>"; 
 											} 
 											echo $product_image;
 											?>
@@ -617,7 +617,7 @@ if(!empty($schema_org_faqpage)) {
 								<div class="col-12 text-center" style="padding-bottom:20px;">
 									<?php $product_image = '';
 									if(!empty($item->galleryURL[0])) { 
-										$product_image = "<img src='". str_replace("l140","l640",$item->galleryURL[0]) . "' style='width:100%'/>"; //l640 = hack to display a bigger thumbnail
+										$product_image = "<img src='". str_replace("l140","l640",$item->galleryURL[0]) . "' style='width:100%' alt='" . htmlspecialchars((string) $item->title[0], ENT_QUOTES) . "'/>"; //l640 = hack to display a bigger thumbnail
 									} 
 									echo $product_image;
 									?>

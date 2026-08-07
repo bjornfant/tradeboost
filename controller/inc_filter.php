@@ -668,6 +668,28 @@ function tradeboost_value_group($name, $label, $counts, $selected_values, $prefe
 	return array('name' => $name, 'label' => $label, 'options' => $options);
 }
 
+/**
+ * Marks the title and description of a paginated page with its page number.
+ *
+ * Without it page 2 onwards repeated page 1's title and description word for
+ * word, so a category competed against itself on identical text.
+ */
+function tradeboost_paginate_meta(&$page_meta_title, &$page_meta_description, $page, $translation, $language) {
+
+	$page = (int) $page;
+
+	if($page < 2) { return; }
+
+	$word = tradeboost_filter_label($translation, $language, 'page', 'Page');
+	$suffix = ' - ' . $word . ' ' . $page;
+
+	$page_meta_title .= $suffix;
+
+	if(!empty($page_meta_description)) {
+		$page_meta_description .= $suffix;
+	}
+}
+
 function tradeboost_price_labels($translation, $language) {
 	return array(
 		'heading' => tradeboost_filter_label($translation, $language, 'price_range', 'Price'),

@@ -73,6 +73,7 @@ $translation["SE"]["sorting"] = array (
 	"weight_high"			=> "Högst vikt");
 
 $translation["SE"]["filter"] = array (
+	"page"	=> "Sida",
 	"clear_filter"	=> "Rensa filter",
 	"metal"	=> "Metall",
 	"product_type"	=> "Typ",
@@ -286,6 +287,7 @@ $translation["EN"]["sorting"] = array (
 );
 
 $translation["EN"]["filter"] = array (
+	"page"	=> "Page",
 	"clear_filter"	=> "Clear filters",
 	"metal"	=> "Metal",
 	"product_type"	=> "Type",
@@ -497,6 +499,7 @@ $translation["DE"]["sorting"] = array (
 );
 
 $translation["DE"]["filter"] = array (
+	"page"	=> "Seite",
 	"clear_filter"	=> "Filter zurücksetzen",
 	"metal"	=> "Metall",
 	"product_type"	=> "Art",
@@ -715,6 +718,7 @@ $translation["NL"]["sorting"] = array (
 );
 
 $translation["NL"]["filter"] = array (
+	"page"	=> "Pagina",
 	"clear_filter"	=> "Filters wissen",
 	"metal"	=> "Metaal",
 	"product_type"	=> "Type",
@@ -931,6 +935,7 @@ $translation["FR"]["sorting"] = array (
 );
 
 $translation["FR"]["filter"] = array (
+	"page"	=> "Page",
 	"clear_filter"	=> "Effacer les filtres",
 	"metal"	=> "Métal",
 	"product_type"	=> "Type",
@@ -1146,6 +1151,7 @@ $translation["ES"]["sorting"] = array (
 );
 
 $translation["ES"]["filter"] = array (
+	"page"	=> "Página",
 	"clear_filter"	=> "Borrar filtros",
 	"metal"	=> "Metal",
 	"product_type"	=> "Tipo",

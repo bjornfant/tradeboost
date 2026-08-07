@@ -13,9 +13,22 @@ RewriteEngine on
 # Edit this in your init method too if you script lives in a subfolder
 RewriteBase /
 
-#Fix https redirect
+# Force https. Left switched off deliberately - read this before enabling it.
+#
+# The rule that used to sit here redirected to http://, so it sent every https
+# request back to itself. It also tested %{HTTPS} alone, and Cloudflare sits in
+# front of this site: it terminates TLS and talks to the origin over http, so
+# %{HTTPS} is off even on a request that reached the visitor as https. Either
+# fault on its own is an endless redirect.
+#
+# The version below checks the header the proxy forwards as well, which is what
+# makes it loop-safe. Before switching it on, confirm Cloudflare is not already
+# doing this - "Always Use HTTPS" under SSL/TLS - because then it is redundant,
+# and check that the origin really receives X-Forwarded-Proto.
+#
 #RewriteCond %{HTTPS} !=on
-#RewriteRule ^ http://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+#RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+#RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Deliver the folder or file directly if it exists on the server
 RewriteCond %{REQUEST_FILENAME} !-f

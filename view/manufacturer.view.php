@@ -99,7 +99,7 @@
 										if(!empty($product['product_image'])) { 
 											$product_image = "<img src='https://tradeboost.imgix.net/" . $product['product_image'] . "?w=100&h=100' style='max-width:100%' alt='" . $bundle . ucfirst($translation[$page_language][$product['metal'].$product['type']]) . " " .   $product['name'] . "' />"; 
 										} else {
-											$product_image = "<img src='https://tradeboost.eu/image/placeholder_" . $product['type'] . "_" . $product['metal'] . ".png' style='max-width:100%;opacity: 0.2'/>";
+											$product_image = "<img src='https://tradeboost.eu/image/placeholder_" . $product['type'] . "_" . $product['metal'] . ".png' style='max-width:100%;opacity: 0.2' alt='" . htmlspecialchars(ucfirst($translation[$page_language][$product['metal'].$product['type']]) . " " . $product['name'], ENT_QUOTES) . "'/>";
 										}
 
 										echo $product_image;

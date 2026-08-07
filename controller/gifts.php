@@ -192,6 +192,9 @@ La plata es un gran regalo para regalar a alguien en cumpleaños, bautizos o bod
 Silver is a great present to give someone for birthdays, baptism or weddings. It's a symbol of protection and security as well as a beutiful precious gift. In some older cultures, silver is said to be the destruction of evil. It's a weapon or amulett to be used against werewolves, witches and monsters. The word <i>silver bullet</i> is still around today and means <i>the perfect solution that solves all problems</i>. Silver grown to become a popular choice among investors and there is nothing like a shiny silver coin to get a young investor interested in prescious metals. ";
 }
 
+// After the switch above has built the title, not before it.
+tradeboost_paginate_meta($page_meta_title, $page_meta_description, $page, $translation, $page_language);
+
 $og_tags[] = array('property' => 'og:title', 'content' => $page_meta_title);
 $og_tags[] = array('property' => 'og:description', 'content' => $page_meta_description);	
 

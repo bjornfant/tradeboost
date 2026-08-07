@@ -228,6 +228,9 @@ switch ($page_language) {
 		$page_meta_description = "Find the best deals in Europe. Compare prices on " . $page_title . " and thousands of products and suppliers of gold or silver online.";		
 }
 
+// After the switch above has built the title, not before it.
+tradeboost_paginate_meta($page_meta_title, $page_meta_description, $page, $translation, $page_language);
+
 $og_tags[] = array('property' => 'og:title', 'content' => $page_meta_title);
 $og_tags[] = array('property' => 'og:description', 'content' => $page_meta_description);
 $og_tags[] = array('property' => 'og:type', 'content' => 'website');	

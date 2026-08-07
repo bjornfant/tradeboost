@@ -34,13 +34,13 @@ $shipping_options = '';
 if(!empty($shipping_array)) {
 	foreach ($shipping_array as $shipping_code  => $shipping_country) {
 		$set_cookie = "setCookie('shipping_country','".$shipping_country['code']."')";
-		$shipping_options .= '<a class="dropdown-item" href="#" onclick="'.$set_cookie.'"><img src="https://tradeboost.eu/image/icons/flags/' . $country_flags[$shipping_country['code']] . '.png" style="height:18px" /> '.$shipping_country['name'].'</a>';
+		$shipping_options .= '<a class="dropdown-item" href="#" onclick="'.$set_cookie.'"><img src="https://tradeboost.eu/image/icons/flags/' . $country_flags[$shipping_country['code']] . '.png" style="height:18px" alt="" /> '.$shipping_country['name'].'</a>';
 	}
 
 $shipping_options = '<ul class="navbar-nav justify-content-end">
 	  					<li class="nav-item dropdown">
 				        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-				          '.ucfirst($translation[$page_language]['shipping_to']).' <span><img src="https://tradeboost.eu/image/icons/flags/' . $selected_flag . '.png" style="height:18px" /> '. $selected_name .'</span></a>
+				          '.ucfirst($translation[$page_language]['shipping_to']).' <span><img src="https://tradeboost.eu/image/icons/flags/' . $selected_flag . '.png" style="height:18px" alt="" /> '. $selected_name .'</span></a>
 				        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
 				          '.$shipping_options .'
 				      	</div>
