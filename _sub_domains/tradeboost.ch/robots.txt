@@ -20,3 +20,5 @@ User-agent: Bing
 Allow: /
 User-agent: AhrefsBot
 Allow: /
+
+Sitemap: https://tradeboost.ch/sitemap.xml

@@ -109,7 +109,7 @@ class Catalog {
 			$product_row = $product->row;
 			//$products_array['store_products'] = array();
 
-			$product_row['url'] = $product_id."/".strtolower(preg_replace('/[^A-Za-z0-9]/', '_', $product_row['name']));
+			$product_row['url'] = $this->product_url($product_id, $product_row['name']);
 			$product_row['metal_weight_class'] = $this->set_weight_class($product_row);
 			$product_row['store_products'] = array();
 			$product_row['store_products_in_stock'] = array();
@@ -457,7 +457,7 @@ class Catalog {
 			if($all_products->num_rows > 0) {
 
 			foreach($all_products->rows as $product_row) {
-				$product_row['url'] = $product_row['product_id']."/".strtolower(preg_replace('/[^A-Za-z0-9]/', '_', $product_row['name']));
+				$product_row['url'] = $this->product_url($product_row['product_id'], $product_row['name']);
 
 				if(strpos($product_row['name'], '{')) {
 					$product_row['name'] = $this->parse_translation($product_row['name'], COUNTRY_DEFAULT);
@@ -1005,6 +1005,43 @@ class Catalog {
 		}
 
 		return $counts;
+	}
+
+	/**
+	 * The public address of a product. Built from the untranslated name, which
+	 * is what keeps one path valid on all ten sites - see the hreflang note.
+	 */
+	public function product_url($product_id, $name) {
+		return $product_id . "/" . strtolower(preg_replace('/[^A-Za-z0-9]/', '_', $name));
+	}
+
+	/**
+	 * Everything the sitemap needs, in one query.
+	 *
+	 * get_products() was used before, which calls get_product() for every row,
+	 * which queries the offers for each - some three thousand round trips to
+	 * build a list of addresses.
+	 *
+	 * lowest_price_updated is the modification date rather than updated_date:
+	 * the latter is 0000-00-00 on every row, and on a comparison page the price
+	 * changing is the content changing.
+	 */
+	public function get_sitemap_products() {
+
+		$db = new db;
+
+		$sql = "SELECT p.product_id, p.name, p.lowest_price_updated
+			FROM pricecomp_product p
+			WHERE LENGTH(p.product_id) > 0
+			ORDER BY p.product_id";
+
+		$result = $db->query_select($sql);
+
+		if ($result->num_rows > 0) {
+			return $result->rows;
+		}
+
+		return array();
 	}
 
 	public function get_countries($filter_array = false) {

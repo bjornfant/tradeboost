@@ -136,6 +136,10 @@ Route::add('/font/([A-Za-z0-9\-\_]+)', function() {
   include BASE_DIR . '/view/css/base.css.php';
 });
 
+Route::add('/sitemap\.xml', function() {
+  include BASE_DIR . '/controller/feeds/sitemap.php';
+}, 'get');
+
 Route::add('/sitemap', function() {
   include BASE_DIR . '/controller/feeds/sitemap.php';
 });
