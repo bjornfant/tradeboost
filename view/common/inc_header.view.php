@@ -135,7 +135,19 @@ $page_lang = isset($page_lang_codes[$page_language]) ? $page_lang_codes[$page_la
 		}
 		if(!empty($tradeboost_canonical)) { ?>
 		<link href="<?php echo htmlspecialchars($tradeboost_canonical, ENT_QUOTES); ?>" rel="canonical" />
-		<?php }?>
+		<?php }
+
+		/**
+		 * The same page on the other sites. Only on pages that are actually
+		 * indexable: a filtered listing carries noindex, and telling Google that
+		 * a page it has been asked to drop is the German version of another is
+		 * a contradiction.
+		 */
+		if(!$tradeboost_filtered && function_exists('tradeboost_hreflang_alternates')) {
+			foreach(tradeboost_hreflang_alternates($tradeboost_canonical) as $tradeboost_hreflang => $tradeboost_alternate) { ?>
+		<link rel="alternate" hreflang="<?php echo htmlspecialchars($tradeboost_hreflang, ENT_QUOTES); ?>" href="<?php echo htmlspecialchars($tradeboost_alternate, ENT_QUOTES); ?>" />
+		<?php }
+		}?>
 		<?php if(!empty($og_tags)) { 
 			foreach($og_tags as $og_tag) {
 		?>

@@ -80,9 +80,9 @@ function tradeboost_has_active_filters() {
  * category, and page 2 has to point at itself rather than at page 1. Everything
  * in tradeboost_filter_query_keys() is dropped.
  */
-function tradeboost_canonical_url() {
+function tradeboost_canonical_path() {
 
-	$url = rtrim(HTTP, '/') . strtok($_SERVER['REQUEST_URI'], '?');
+	$path = strtok($_SERVER['REQUEST_URI'], '?');
 	$query = array();
 
 	foreach(array('metal', 'type') as $key) {
@@ -95,11 +95,81 @@ function tradeboost_canonical_url() {
 		$query['page'] = (int) $_GET['page'];
 	}
 
-	if(!empty($query)) {
-		$url .= '?' . http_build_query($query);
+	if(!empty($query)) { $path .= '?' . http_build_query($query); }
+
+	return $path;
+}
+
+function tradeboost_canonical_url() {
+	return rtrim(HTTP, '/') . tradeboost_canonical_path();
+}
+
+/**
+ * The sites that run this application, by the hreflang each one targets.
+ *
+ * Three of them are German, two English and two Dutch, all serving the same
+ * pages from the same database, so without this Google sees three near
+ * identical German catalogues and picks one. The region matters more than the
+ * language here: de-AT and de-CH differ in currency and shipping, not wording.
+ *
+ * tradeboost.eu is the pan-European English site and therefore also the
+ * x-default, the page to send anyone the other entries do not cover.
+ */
+function tradeboost_hreflang_sites() {
+	return array(
+		'sv-SE' => 'https://tradeboost.se',
+		'en-GB' => 'https://trade-boost.co.uk',
+		'de-DE' => 'https://trade-boost.de',
+		'de-AT' => 'https://tradeboost.at',
+		'de-CH' => 'https://tradeboost.ch',
+		'nl-NL' => 'https://tradeboost.nl',
+		'nl-BE' => 'https://tradeboost.be',
+		'fr-FR' => 'https://tradeboost.fr',
+		'es-ES' => 'https://tradeboost.es',
+		'en'    => 'https://tradeboost.eu',
+	);
+}
+
+/**
+ * Returns hreflang => absolute url for the current page on every site,
+ * this one included - a set has to reference itself to be valid.
+ *
+ * Empty unless the current site is one of them, because a set that leaves out
+ * the page it sits on is worse than none at all. Every route builds its path
+ * from ids and untranslated slugs, so the same path is the same page on all of
+ * them.
+ */
+function tradeboost_hreflang_alternates($canonical_url = '') {
+
+	$sites = tradeboost_hreflang_sites();
+	$current = rtrim(HTTP, '/');
+
+	if(!in_array($current, $sites, true)) { return array(); }
+
+	/**
+	 * The path is taken from the page's own canonical rather than from the
+	 * address that was requested. A product page canonicalises to the form with
+	 * the name in it, so building the alternates from the request would have
+	 * pointed at /product/206 while that page itself says /product/206/name -
+	 * an alternate whose canonical disagrees breaks the set.
+	 */
+	$path = '';
+	if(!empty($canonical_url)) {
+		$path = (string) parse_url($canonical_url, PHP_URL_PATH);
+		$query = parse_url($canonical_url, PHP_URL_QUERY);
+		if(!empty($query)) { $path .= '?' . $query; }
 	}
 
-	return $url;
+	if($path === '') { $path = tradeboost_canonical_path(); }
+
+	$alternates = array();
+
+	foreach($sites as $hreflang => $base) {
+		$alternates[$hreflang] = $base . $path;
+		if($base === 'https://tradeboost.eu') { $alternates['x-default'] = $base . $path; }
+	}
+
+	return $alternates;
 }
 
 /**
